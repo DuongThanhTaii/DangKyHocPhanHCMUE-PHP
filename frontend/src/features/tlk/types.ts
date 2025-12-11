@@ -1,0 +1,96 @@
+export interface DeXuatHocPhanRequest {
+    maHocPhan: string;
+    maGiangVien: string;
+}
+
+export interface DeXuatHocPhanForTroLyKhoaDTO {
+    id: string;
+    maHocPhan: string;
+    tenHocPhan: string;
+    soTinChi: number;
+    giangVien: string;
+    trangThai: string;
+}
+
+export interface PhongHocDTO {
+    id: string;
+    maPhong: string;
+    tenCoSo: string;
+    sucChua: number;
+}
+
+export interface HocPhanForCreateLopDTO {
+    id: string;  // de_xuat_id - unique key
+    hocPhanId: string;  // actual hoc_phan.id for creating lop
+    maHocPhan: string;
+    tenHocPhan: string;
+    soTinChi: number;
+    soSinhVienGhiDanh: number;
+    tenGiangVien: string;
+    giangVienId: string;
+}
+
+// ============ Types for LenDanhSachHocPhan ============
+
+export interface MonHocDTO {
+    id: string;
+    ma_mon: string;
+    ten_mon: string;
+    so_tin_chi: number;
+}
+
+export interface GiangVienDTO {
+    id: string;
+    ho_ten: string;
+}
+
+export interface HocKyHienHanhDTO {
+    id: string;
+    hoc_ky_id: string;
+    nien_khoa_id: string;
+    hoc_ky: {
+        so_hoc_ky: number;
+        ten_hoc_ky: string;
+    };
+    nien_khoa: {
+        nam_bat_dau: number;
+        nam_ket_thuc: number;
+    };
+}
+
+// ============ Alternative HocKyHienHanh response format ============
+export interface HocKyHienHanhResponse {
+    hoc_ky_id: string;
+    ten_hoc_ky: string;
+    nien_khoa: string;
+}
+
+/**
+ * Thông tin lớp học trong TKB
+ */
+export interface ThongTinLopHoc {
+    id?: string; // ID nếu lớp đã tồn tại
+    tenLop: string;
+    phongHoc?: string; // Tên phòng (B.310)
+    phongHocId?: string; // UUID reference
+    ngayBatDau: Date;
+    ngayKetThuc: Date;
+    tietBatDau: number;
+    tietKetThuc: number;
+    thuTrongTuan?: number;
+}
+
+export interface XepTKBRequest {
+    maHocPhan: string;
+    hocKyId: string;
+    danhSachLop: ThongTinLopHoc[];
+}
+
+/**
+ * DTO response - Thời khóa biểu môn học
+ */
+export interface ThoiKhoaBieuMonHocDTO {
+    id: string;
+    maHocPhan: string;
+    danhSachLop: ThongTinLopHoc[];
+}

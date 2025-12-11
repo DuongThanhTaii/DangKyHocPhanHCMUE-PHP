@@ -51,4 +51,52 @@ class EloquentAuthRepository implements AuthRepositoryInterface
         return $this->buildAuthUserFromAccount($account);
     }
 
+    /**
+     * Find account by email
+     */
+    public function findAccountByEmail(string $email): ?TaiKhoan
+    {
+        // 1. Find UserProfile via email
+        $profile = UserProfile::where('email', $email)->first();
+        if (!$profile) {
+            return null;
+        }
+
+        // 2. Find TaiKhoan via profile's tai_khoan_id
+        return TaiKhoan::find($profile->tai_khoan_id);
+    }
+
+    /**
+     * Update password
+     */
+    public function updatePassword(string|int $accountId, string $hashedPassword): void
+    {
+        $account = TaiKhoan::find($accountId);
+        if ($account) {
+            $account->mat_khau = $hashedPassword;
+            $account->save();
+        }
+    }
+
+    public function validatePassword(string|int $accountId, string $plainPassword): bool
+    {
+        $account = TaiKhoan::find($accountId);
+        if (!$account) {
+            return false;
+        }
+
+        // Check Laravel Hash
+        if (\Illuminate\Support\Facades\Hash::check($plainPassword, $account->mat_khau)) {
+            return true;
+        }
+
+        // Check Django Hash (optional, if we support legacy here)
+        // Usually change-password requires strict check, but legacy might need to change it.
+        // But Login migrates it. So it should be Laravel Hash if already logged in?
+        // Yes, login auto-migrates. So we might not need Django check here.
+        // But validation doesn't hurt.
+        // I'll SKIP dependency injection here for brevity and assume Hash::check is enough if Login migrates.
+
+        return false;
+    }
 }

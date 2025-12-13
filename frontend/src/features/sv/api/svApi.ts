@@ -40,8 +40,8 @@ export const svApi = {
     },
 
     huyGhiDanhMonHoc: async (data: RequestHuyGhiDanhMonHoc): Promise<ServiceResult<null>> => {
-        return await fetchJSON("sv/ghi-danh", {
-            method: "DELETE",
+        return await fetchJSON("sv/huy-ghi-danh", {
+            method: "POST",
             body: data,
         });
     },

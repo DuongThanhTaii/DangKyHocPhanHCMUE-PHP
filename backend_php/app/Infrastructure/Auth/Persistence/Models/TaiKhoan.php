@@ -21,6 +21,7 @@ class TaiKhoan extends Authenticatable implements JWTSubject
     public $timestamps = false;
 
     protected $fillable = [
+        'id',
         'ten_dang_nhap',
         'mat_khau',
         'loai_tai_khoan',

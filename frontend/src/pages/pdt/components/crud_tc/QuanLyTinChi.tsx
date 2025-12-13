@@ -28,6 +28,7 @@ export default function QuanLyTinChi() {
     loading: loadingCS,
     createChinhSach,
     updateChinhSach,
+    deleteChinhSach,
   } = useChinhSachTinChi();
   const { data: khoas, loading: loadingKhoa } = useDanhSachKhoa();
   const { data: hocKyNienKhoas, loading: loadingHocKy } = useHocKyNienKhoa();
@@ -193,6 +194,20 @@ export default function QuanLyTinChi() {
       setEditingId(null);
       setEditingValue("");
     }
+  };
+
+  // ✅ Handle delete
+  const handleDelete = async (id: string) => {
+    const confirmed = await openConfirm({
+      message: "Bạn chắc chắn muốn xóa chính sách này?",
+      confirmText: "Xóa",
+      cancelText: "Hủy",
+      variant: "danger",
+    });
+
+    if (!confirmed) return;
+
+    await deleteChinhSach(id);
   };
 
   // ✅ Handle tính học phí hàng loạt
@@ -437,7 +452,7 @@ export default function QuanLyTinChi() {
                     </td>
 
                     {/* ✅ Action buttons */}
-                    <td>
+                    <td className="df_center">
                       {editingId === d.id ? (
                         <div
                           style={{
@@ -471,23 +486,32 @@ export default function QuanLyTinChi() {
                           </button>
                         </div>
                       ) : (
-                        <button
-                          className="btn__update df_center gap_10 h__40"
-                          onClick={() => handleStartEdit(d.id, d.phiMoiTinChi)}
-                          style={{ padding: "4px 12px", fontSize: "13px" }}
-                        >
-                          <svg
-                            className="df_center"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 640 640"
+                        <>
+                          <button
+                            className="btn__update df_center gap_10 h__40"
+                            onClick={() => handleStartEdit(d.id, d.phiMoiTinChi)}
+                            style={{ padding: "4px 12px", fontSize: "13px" }}
                           >
-                            <path
-                              fill="currentColor"
-                              d="M416.9 85.2L372 130.1L509.9 268L554.8 223.1C568.4 209.6 576 191.2 576 172C576 152.8 568.4 134.4 554.8 120.9L519.1 85.2C505.6 71.6 487.2 64 468 64C448.8 64 430.4 71.6 416.9 85.2zM338.1 164L122.9 379.1C112.2 389.8 104.4 403.2 100.3 417.8L64.9 545.6C62.6 553.9 64.9 562.9 71.1 569C77.3 575.1 86.2 577.5 94.5 575.2L222.3 539.7C236.9 535.6 250.2 527.9 261 517.1L476 301.9L338.1 164z"
-                            ></path>
-                          </svg>{" "}
-                          Chỉnh sửa
-                        </button>
+                            <svg
+                              className="df_center"
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 640 640"
+                            >
+                              <path
+                                fill="currentColor"
+                                d="M416.9 85.2L372 130.1L509.9 268L554.8 223.1C568.4 209.6 576 191.2 576 172C576 152.8 568.4 134.4 554.8 120.9L519.1 85.2C505.6 71.6 487.2 64 468 64C448.8 64 430.4 71.6 416.9 85.2zM338.1 164L122.9 379.1C112.2 389.8 104.4 403.2 100.3 417.8L64.9 545.6C62.6 553.9 64.9 562.9 71.1 569C77.3 575.1 86.2 577.5 94.5 575.2L222.3 539.7C236.9 535.6 250.2 527.9 261 517.1L476 301.9L338.1 164z"
+                              ></path>
+                            </svg>{" "}
+                            Chỉnh sửa
+                          </button>
+                          <button
+                            className="btn-cancel"
+                            onClick={() => handleDelete(d.id)}
+                            style={{ padding: "4px 12px", fontSize: "13px", marginLeft: "8px" }}
+                          >
+                            Xóa
+                          </button>
+                        </>
                       )}
                     </td>
                   </tr>

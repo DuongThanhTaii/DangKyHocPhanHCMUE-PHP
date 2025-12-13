@@ -68,5 +68,25 @@ export const useChinhSachTinChi = () => {
         }
     };
 
-    return { data, loading, createChinhSach, updateChinhSach, refetch: fetchData };
+    const deleteChinhSach = async (id: string) => {
+        setLoading(true);
+        try {
+            const result = await pdtApi.deleteChinhSachTinChi(id);
+            if (result.isSuccess) {
+                openNotify({ message: "Xóa chính sách thành công!", type: "success" });
+                await fetchData();
+                return true;
+            } else {
+                openNotify({ message: result.message || "Không thể xóa", type: "error" });
+                return false;
+            }
+        } catch (error: any) {
+            openNotify({ message: `Lỗi: ${error.message}`, type: "error" });
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return { data, loading, createChinhSach, updateChinhSach, deleteChinhSach, refetch: fetchData };
 };

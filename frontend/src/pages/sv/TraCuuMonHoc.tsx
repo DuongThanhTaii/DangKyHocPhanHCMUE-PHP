@@ -5,6 +5,27 @@ import { useTraCuuHocPhan } from "../../features/sv/hooks";
 import type { MonHocTraCuuDTO } from "../../features/sv/types";
 import HocKySelector from "../../components/HocKySelector";
 
+// Helper to get display name for loaiMon
+const getLoaiMonLabel = (loaiMon: string): string => {
+  switch (loaiMon) {
+    case "chuyen_nganh":
+      return "Chuyên ngành";
+    case "dai_cuong":
+      return "Đại cương";
+    case "tu_chon":
+      return "Tự chọn";
+    default:
+      return "Khác";
+  }
+};
+
+// Type for grouped data
+interface GroupedByLoaiMon {
+  loaiMon: string;
+  loaiMonLabel: string;
+  monHocs: MonHocTraCuuDTO[];
+}
+
 export default function TraCuuMonHoc() {
   const [selectedHocKyId, setSelectedHocKyId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -33,6 +54,29 @@ export default function TraCuuMonHoc() {
 
     return result;
   }, [monHocs, loaiMonFilter, searchQuery]);
+
+  // ✅ Group by loaiMon
+  const groupedData = useMemo((): GroupedByLoaiMon[] => {
+    const groups: Record<string, MonHocTraCuuDTO[]> = {};
+
+    filteredData.forEach((mon) => {
+      const key = mon.loaiMon || "khac";
+      if (!groups[key]) {
+        groups[key] = [];
+      }
+      groups[key].push(mon);
+    });
+
+    // Order: dai_cuong, chuyen_nganh, tu_chon, khac
+    const order = ["dai_cuong", "chuyen_nganh", "tu_chon", "khac"];
+    return order
+      .filter((key) => groups[key] && groups[key].length > 0)
+      .map((key) => ({
+        loaiMon: key,
+        loaiMonLabel: getLoaiMonLabel(key),
+        monHocs: groups[key],
+      }));
+  }, [filteredData]);
 
   return (
     <section className="main__body">
@@ -74,30 +118,29 @@ export default function TraCuuMonHoc() {
           </div>
         </div>
 
-        {/* ✅ Data Table */}
+        {/* ✅ Data Table - Grouped by loaiMon */}
         {loadingData ? (
           <p style={{ textAlign: "center", padding: 40 }}>
             Đang tải danh sách học phần...
           </p>
         ) : (
           <>
-            {filteredData.map((mon: MonHocTraCuuDTO) => (
-              <fieldset key={mon.stt} className="fieldeset__dkhp mt_20">
+            {groupedData.map((group: GroupedByLoaiMon) => (
+              <fieldset key={group.loaiMon} className="fieldeset__dkhp mt_20">
                 <legend>
-                  {mon.stt}. {mon.maMon} - {mon.tenMon} ({mon.soTinChi} TC) -{" "}
-                  <span style={{ color: "#3b82f6" }}>
-                    {mon.loaiMon === "chuyen_nganh"
-                      ? "Chuyên ngành"
-                      : mon.loaiMon === "dai_cuong"
-                      ? "Đại cương"
-                      : "Tự chọn"}
-                  </span>
+                  <span style={{ color: "#3b82f6", fontWeight: "bold" }}>
+                    {group.loaiMonLabel}
+                  </span>{" "}
+                  ({group.monHocs.length} môn)
                 </legend>
 
                 <table className="table" style={{ color: "#172b4d" }}>
                   <thead>
                     <tr>
                       <th>STT</th>
+                      <th>Mã môn</th>
+                      <th>Tên môn</th>
+                      <th>TC</th>
                       <th>Mã lớp</th>
                       <th>Giảng viên</th>
                       <th>Sĩ số</th>
@@ -105,26 +148,50 @@ export default function TraCuuMonHoc() {
                     </tr>
                   </thead>
                   <tbody>
-                    {mon.danhSachLop.map((lop: any, idx: any) => (
-                      <tr key={lop.id}>
-                        <td>{idx + 1}</td>
-                        <td>{lop.maLop}</td>
-                        <td>{lop.giangVien}</td>
-                        <td>
-                          {lop.soLuongHienTai}/{lop.soLuongToiDa}
-                        </td>
+                    {group.monHocs.map((mon: MonHocTraCuuDTO) => {
+                      // If no classes, show one row with subject info
+                      if (mon.danhSachLop.length === 0) {
+                        return (
+                          <tr key={mon.stt}>
+                            <td>{mon.stt}</td>
+                            <td>{mon.maMon}</td>
+                            <td>{mon.tenMon}</td>
+                            <td>{mon.soTinChi}</td>
+                            <td colSpan={4} style={{ color: "#9ca3af", fontStyle: "italic" }}>
+                              Chưa có lớp học phần
+                            </td>
+                          </tr>
+                        );
+                      }
 
-                        <td style={{ whiteSpace: "pre-line" }}>
-                          {lop.thoiKhoaBieu}
-                        </td>
-                      </tr>
-                    ))}
+                      // Render each class as a row, with subject info on first row
+                      return mon.danhSachLop.map((lop: any, idx: number) => (
+                        <tr key={`${mon.stt}-${lop.id}`}>
+                          {idx === 0 ? (
+                            <>
+                              <td rowSpan={mon.danhSachLop.length}>{mon.stt}</td>
+                              <td rowSpan={mon.danhSachLop.length}>{mon.maMon}</td>
+                              <td rowSpan={mon.danhSachLop.length}>{mon.tenMon}</td>
+                              <td rowSpan={mon.danhSachLop.length}>{mon.soTinChi}</td>
+                            </>
+                          ) : null}
+                          <td>{lop.maLop}</td>
+                          <td>{lop.giangVien}</td>
+                          <td>
+                            {lop.soLuongHienTai}/{lop.soLuongToiDa}
+                          </td>
+                          <td style={{ whiteSpace: "pre-line" }}>
+                            {lop.thoiKhoaBieu}
+                          </td>
+                        </tr>
+                      ));
+                    })}
                   </tbody>
                 </table>
               </fieldset>
             ))}
 
-            {filteredData.length === 0 && selectedHocKyId && (
+            {groupedData.length === 0 && selectedHocKyId && (
               <p style={{ textAlign: "center", padding: 40, color: "#6b7280" }}>
                 {searchQuery || loaiMonFilter !== "all"
                   ? "Không tìm thấy môn học phù hợp với bộ lọc"

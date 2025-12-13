@@ -12,138 +12,247 @@
 
 **Priority: HIGH | Complexity: LOW | Status: DONE**
 
-#### Files cần tạo:
+#### API Endpoints Implemented:
+
+- POST `/api/auth/login` - Login và lấy JWT token ✅
+- POST `/api/auth/refresh` - Refresh token ✅
+
+---
+
+## 📋 Phase 2: Core Domain Models & API Endpoints
+
+### Danh Mục (Master Data) - Common APIs
+
+**Status: IMPLEMENTED** ✅
 
 ```
-domain/
-└── entities/
-    └── user.py                 # User entity với business logic
-
-application/
-├── dtos/
-│   ├── auth_dto.py            # LoginDTO, TokenDTO
-├── ports/
-│   ├── auth_repository.py     # IAuthRepository interface
-│   └── token_service.py       # ITokenService interface
-└── use_cases/
-    ├── login_usecase.py       # LoginUseCase
-    └── get_user_info_usecase.py
-
-infrastructure/
-├── persistence/
-│   ├── models.py              # Django models (từ inspectdb)
-│   └── auth_repository.py     # AuthRepository implementation
-└── services/
-    ├── jwt_service.py         # JWT token service
-    └── password_service.py    # Bcrypt password hashing
-
-presentation/
-└── api/
-    ├── serializers/
-    │   └── auth_serializer.py # DRF serializers
-    ├── views/
-    │   └── auth_views.py      # API ViewSets
-    └── urls/
-        └── auth_urls.py       # URL routing
-
-test-case/
-├── unit/
-│   ├── test_login_usecase.py
-│   └── test_jwt_service.py
-├── integration/
-│   └── test_auth_repository.py
-└── e2e/
-    └── test_login_api.py
+GET  /api/hoc-ky-hien-hanh                   - Get current semester ✅
+GET  /api/hien-hanh                          - Get current semester (alias) ✅
+GET  /api/hoc-ky/dates                       - Get semester dates ✅
+GET  /api/dm/khoa                            - Get list of khoa (departments) ✅
+GET  /api/dm/nganh                           - Get list of nganh (specializations) ✅
+GET  /api/dm/nganh/chua-co-chinh-sach        - Get specializations without policy ✅
+GET  /api/config/tiet-hoc                    - Get class time config ✅
 ```
 
-#### API Endpoints:
+### Step 3: Sinh Viên Module
 
-- POST `/api/auth/login` - Login và lấy JWT token
-- POST `/api/auth/refresh` - Refresh token
-- GET `/api/auth/me` - Get user info
-- POST `/api/auth/logout` - Logout (blacklist token)
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/sv/profile                     - Get student profile ✅
+GET  /api/sv/lop-hoc-phan/{id}/tai-lieu  - Get documents for class ✅
+GET  /api/sv/lop-hoc-phan/{id}/tai-lieu/{doc_id}/download  - Download document ✅
+```
+
+### Step 4: Enrollment (Ghi Danh) Flow
+
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/sv/check-ghi-danh              - Check if can enroll ✅
+GET  /api/sv/mon-hoc-ghi-danh            - Get subjects to enroll ✅
+POST /api/sv/ghi-danh                    - Enroll in subjects ✅
+GET  /api/sv/ghi-danh/my                 - Get enrolled subjects list ✅
+```
+
+### Step 5: Course Registration (Đăng Ký Học Phần) Flow
+
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/sv/check-phase-dang-ky         - Check if registration phase is open ✅
+GET  /api/sv/lop-hoc-phan                - Get list of classes to register ✅
+GET  /api/sv/lop-da-dang-ky              - Get registered classes list ✅
+POST /api/sv/dang-ky-hoc-phan            - Register for class ✅
+POST /api/sv/huy-dang-ky-hoc-phan        - Unregister from class ✅
+POST /api/sv/chuyen-lop-hoc-phan         - Transfer to another class ✅
+GET  /api/sv/lop-hoc-phan/mon-hoc        - Get classes by subject ✅
+GET  /api/sv/lich-su-dang-ky             - Get registration history ✅
+GET  /api/sv/tkb-weekly                  - Get weekly schedule ✅
+GET  /api/sv/tra-cuu-hoc-phan            - Search classes ✅
+GET  /api/sv/hoc-phi                     - Get tuition details ✅
+GET  /api/sv/lop-hoc-phan/{id}/tai-lieu  - Get documents for class ✅
+GET  /api/sv/lop-da-dang-ky/tai-lieu     - Get documents for registered classes ✅
+```
+
+### Step 6: Payment Module
+
+**Status: IMPLEMENTED** ✅
+
+```
+POST /api/payment/create                 - Create payment order (VNPay/MoMo) ✅
+GET  /api/payment/status                 - Get payment status ✅
+POST /api/payment/ipn                    - Payment IPN callback handler ✅
+```
+
+### Step 7: Giảng Viên (GV) Module
+
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/gv/lop-hoc-phan                - Get instructor's classes ✅
+GET  /api/gv/lop-hoc-phan/{id}           - Get class details ✅
+GET  /api/gv/lop-hoc-phan/{id}/sinh-vien - Get class students ✅
+GET  /api/gv/lop-hoc-phan/{id}/diem      - Get/update student grades ✅
+GET  /api/gv/lop-hoc-phan/{id}/tai-lieu  - Get class documents list ✅
+POST /api/gv/lop-hoc-phan/{id}/tai-lieu/upload - Upload document ✅
+GET  /api/gv/lop-hoc-phan/{id}/tai-lieu/{doc_id} - Get document details ✅
+GET  /api/gv/lop-hoc-phan/{id}/tai-lieu/{doc_id}/download - Download document ✅
+GET  /api/gv/tkb-weekly                  - Get instructor schedule ✅
+```
+
+### Step 8: Trợ Lý Khoa (TLK) Module
+
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/tlk/mon-hoc                    - Get list of courses ✅
+GET  /api/tlk/giang-vien                 - Get list of instructors ✅
+GET  /api/tlk/lop-hoc-phan/get-hoc-phan/{hoc_ky_id} - Get courses for semester ✅
+GET  /api/tlk/phong-hoc                  - Get list of rooms ✅
+GET  /api/tlk/phong-hoc/available        - Get available rooms ✅
+GET  /api/tlk/de-xuat-hoc-phan           - Get course proposals (view only) ✅
+POST /api/tlk/thoi-khoa-bieu/batch       - Batch schedule assignments ✅
+POST /api/tlk/thoi-khoa-bieu             - Create/update schedule ✅
+```
+
+### Step 9: Trưởng Khoa (TK) Module
+
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/tk/de-xuat-hoc-phan            - Get course proposals (view only) ✅
+POST /api/tk/de-xuat-hoc-phan/duyet      - Approve course proposal ✅
+POST /api/tk/de-xuat-hoc-phan/tu-choi    - Reject course proposal ✅
+```
+
+### Step 10: PDT (Phòng Đào Tạo) Management Module
+
+**Status: IMPLEMENTED** ✅
+
+```
+POST /api/pdt/quan-ly-hoc-ky/hoc-ky-hien-hanh      - Set current semester ✅
+POST /api/pdt/quan-ly-hoc-ky/ky-phase/bulk         - Create semester phases ✅
+GET  /api/pdt/quan-ly-hoc-ky/ky-phase/{hoc_ky_id}  - Get phases by semester ✅
+GET  /api/pdt/de-xuat-hoc-phan                     - Get course proposals ✅
+POST /api/pdt/de-xuat-hoc-phan                     - Create course proposal ✅
+POST /api/pdt/de-xuat-hoc-phan/duyet               - Approve proposal ✅
+POST /api/pdt/de-xuat-hoc-phan/tu-choi             - Reject proposal ✅
+POST /api/pdt/dot-ghi-danh/update                  - Update enrollment period ✅
+GET  /api/pdt/dot-dang-ky/{hoc_ky_id}              - Get periods by semester ✅
+GET  /api/pdt/dot-dang-ky                          - Get all periods ✅
+GET  /api/pdt/khoa                                 - Get departments list ✅
+GET  /api/pdt/phong-hoc/available                  - Get available rooms ✅
+GET  /api/pdt/phong-hoc/khoa/{khoa_id}             - Get rooms by department ✅
+POST /api/pdt/phong-hoc/assign                     - Assign room to class ✅
+POST /api/pdt/phong-hoc/unassign                   - Unassign room ✅
+POST /api/pdt/chinh-sach-tin-chi                   - Create tuition policy ✅
+GET  /api/pdt/chinh-sach-tin-chi                   - Get tuition policies ✅
+GET  /api/pdt/chinh-sach-tin-chi/{id}              - Get policy details ✅
+PUT  /api/pdt/chinh-sach-tin-chi/{id}              - Update policy ✅
+DELETE /api/pdt/chinh-sach-tin-chi/{id}            - Delete policy ✅
+POST /api/pdt/hoc-phi/tinh-toan-hang-loat          - Calculate tuition batch ✅
+POST /api/pdt/sinh-vien                            - Create student ✅
+GET  /api/pdt/sinh-vien                            - Get students list ✅
+PUT  /api/pdt/sinh-vien/{id}                       - Update student ✅
+DELETE /api/pdt/sinh-vien/{id}                     - Delete student ✅
+POST /api/pdt/mon-hoc                              - Create course ✅
+GET  /api/pdt/mon-hoc                              - Get courses list ✅
+PUT  /api/pdt/mon-hoc/{id}                         - Update course ✅
+DELETE /api/pdt/mon-hoc/{id}                       - Delete course ✅
+POST /api/pdt/giang-vien                           - Create instructor ✅
+GET  /api/pdt/giang-vien                           - Get instructors list ✅
+PUT  /api/pdt/giang-vien/{id}                      - Update instructor ✅
+DELETE /api/pdt/giang-vien/{id}                    - Delete instructor ✅
+POST /api/pdt/demo/toggle-phase                    - Toggle phase (demo) ✅
+POST /api/pdt/demo/reset-data                      - Reset demo data ✅
+POST /api/pdt/ky-phase/toggle                      - Toggle phase ✅
+```
+
+### Step 11: Báo Cáo (Reports) Module
+
+**Status: IMPLEMENTED** ✅
+
+```
+GET  /api/bao-cao/overview                - Get overview statistics ✅
+GET  /api/bao-cao/dk-theo-khoa            - Get registrations by department ✅
+GET  /api/bao-cao/dk-theo-nganh           - Get registrations by specialization ✅
+GET  /api/bao-cao/tai-giang-vien          - Get instructor workload ✅
+GET  /api/bao-cao/export/excel            - Export report to Excel ✅
+GET  /api/bao-cao/export/pdf              - Export report to PDF ✅
+```
 
 ---
 
-## 📋 Phase 2: Core Domain Models
+## 📋 Phase 3: Database & ORM Models (CURRENT)
 
-### Step 3: Sinh Viên Module (NEXT)
+### Database Setup
 
-- [ ] Entities: SinhVien
-- [ ] Use cases: GetSinhVienInfo, UpdateProfile
-- [ ] Test cases
-
-### Step 4: Danh Mục (Master Data)
-
-- [ ] GET /api/dm/khoa
-- [ ] GET /api/dm/nganh
-- [ ] GET /api/dm/nien-khoa
+- [x] Generate models từ Neon DB
+- [x] Copy models vào `infrastructure/persistence/models.py`
+- [x] Configure database routing
 
 ---
 
-## 📋 Phase 3: Registration Flow
-
-### Step 5: Ghi Danh (Enrollment)
-
-- [ ] CheckPhaseGhiDanh
-- [ ] GhiDanhMonHoc
-- [ ] GetDanhSachGhiDanh
-
-### Step 6: Đăng Ký Học Phần
-
-- [ ] CheckPhaseDangKy
-- [ ] DangKyHocPhan
-- [ ] HuyDangKyHocPhan
-- [ ] ChuyenLopHocPhan
-
-### Step 7: Thời Khóa Biểu
-
-- [ ] GetTKBSinhVien
-- [ ] GetTKBWeekly
-- [ ] CheckXungDot
+## 📋 Phase 4: Test & Validation
 
 ---
 
-## 📋 Phase 4: Advanced Features
+## 🎯 Next Priority: Optimization & Documentation
 
-### Step 8: Học Phí (Tuition)
+### Tasks:
 
-- [ ] ComputeTuition
-- [ ] GetTuitionDetails
+1. **Clean Architecture Implementation**
 
-### Step 9: Payment
+   - [ ] Refactor existing views to use use-cases
+   - [ ] Extract business logic to domain layer
+   - [ ] Implement proper DTOs for all endpoints
 
-- [ ] VNPay Integration
-- [ ] MoMo Integration
-- [ ] IPN Handler
+2. **Test Coverage**
 
-### Step 10: PDT Module
+   - [ ] Add unit tests for all use-cases
+   - [ ] Add integration tests for repositories
+   - [ ] Add E2E tests for critical flows
 
-- [ ] CRUD Sinh viên
-- [ ] CRUD Giảng viên
-- [ ] Quản lý học kỳ & Phase
-- [ ] Báo cáo thống kê
+3. **Documentation**
 
----
+   - [ ] API documentation (OpenAPI/Swagger)
+   - [ ] Database schema documentation
+   - [ ] Architecture decision records (ADRs)
 
-## 🎯 Current Focus: Authentication Use Case
+4. **Performance & Security**
 
-### Test-Driven Development Flow:
+   - [ ] Add caching layer (Redis)
+   - [ ] Implement rate limiting
+   - [ ] Add audit logging
+   - [ ] Security headers & CORS policy
 
-1. ✍️ Write test case (RED)
-2. ✅ Implement code (GREEN)
-3. ♻️ Refactor (REFACTOR)
-4. 🔄 Repeat
-
-### Testing Strategy:
-
-- **Unit Tests**: Test use cases, services in isolation
-- **Integration Tests**: Test repository với real DB
-- **E2E Tests**: Test API endpoints với DRF test client
+5. **Deployment**
+   - [ ] Docker setup verification
+   - [ ] CI/CD pipeline setup
+   - [ ] Database migration strategy
 
 ---
 
-## 📦 Dependencies cần thêm:
+## � Endpoint Summary by Module
+
+| Module                | Endpoints | Status             |
+| --------------------- | --------- | ------------------ |
+| Authentication        | 2         | ✅ IMPLEMENTED     |
+| Master Data           | 7         | ✅ IMPLEMENTED     |
+| Sinh Viên (SV)        | 3         | ✅ IMPLEMENTED     |
+| Ghi Danh (Enrollment) | 4         | ✅ IMPLEMENTED     |
+| Đăng Ký (Course Reg)  | 13        | ✅ IMPLEMENTED     |
+| Payment               | 3         | ✅ IMPLEMENTED     |
+| Giảng Viên (GV)       | 9         | ✅ IMPLEMENTED     |
+| Trợ Lý Khoa (TLK)     | 8         | ✅ IMPLEMENTED     |
+| Trưởng Khoa (TK)      | 3         | ✅ IMPLEMENTED     |
+| PDT Management        | 39        | ✅ IMPLEMENTED     |
+| Reports (Báo Cáo)     | 6         | ✅ IMPLEMENTED     |
+| **TOTAL**             | **97**    | ✅ **IMPLEMENTED** |
+
+---
 
 ```txt
 djangorestframework>=3.14.0

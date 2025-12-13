@@ -10,16 +10,19 @@ class UserEntity
         public ?string $hoTen,
         public ?string $email,
         public string $loaiTaiKhoan,
-    ) {}
+        public ?string $maNhanVien = null,
+    ) {
+    }
 
     public function toArray(): array
     {
         return [
-            'id'             => $this->id,
-            'ten_dang_nhap'  => $this->tenDangNhap,
-            'ho_ten'         => $this->hoTen,
-            'email'          => $this->email,
-            'loai_tai_khoan' => $this->loaiTaiKhoan,
+            'id' => $this->id,
+            'tenDangNhap' => $this->tenDangNhap,
+            'hoTen' => $this->hoTen,
+            'email' => $this->email,
+            'loaiTaiKhoan' => $this->loaiTaiKhoan,
+            'maNhanVien' => $this->maNhanVien,
         ];
     }
 }

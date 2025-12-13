@@ -59,10 +59,22 @@ class AuthController extends Controller
 
     public function refresh(): JsonResponse
     {
-        return response()->json([
-            'token' => auth()->refresh(),
-            'message' => 'Refresh token thành công'
-        ]);
+        try {
+            $token = auth()->refresh();
+            return response()->json([
+                'isSuccess' => true,
+                'data' => [
+                    'accessToken' => $token,
+                ],
+                'message' => 'Refresh token thành công'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'data' => null,
+                'message' => 'Token không hợp lệ hoặc đã hết hạn'
+            ], 401);
+        }
     }
 
     public function changePassword(\Illuminate\Http\Request $request): JsonResponse

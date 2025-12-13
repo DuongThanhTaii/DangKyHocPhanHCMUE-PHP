@@ -36,6 +36,7 @@ import GVThoiKhoaBieu from "./pages/gv/GVThoiKhoaBieu";
 import DangKyHocPhan from "./pages/sv/DangKyHocPhan";
 import ThanhToanHocPhi from "./pages/sv/ThanhToanHocPhi";
 import PaymentResult from "./pages/sv/PaymentResult";
+import DemoPaymentPage from "./pages/sv/DemoPaymentPage";
 
 // Add SV imports
 import SVLopHocPhanList from "./pages/sv/SVLopHocPhanList";
@@ -128,6 +129,7 @@ export const router = createBrowserRouter([
       { path: "xem-thoi-khoa-bieu", element: <XemThoiKhoaBieu /> },
       { path: "dang-ky-hoc-phan", element: <DangKyHocPhan /> },
       { path: "thanh-toan-hoc-phi", element: <ThanhToanHocPhi /> },
+      { path: "payment/demo", element: <DemoPaymentPage /> },
 
       { path: "tai-lieu", element: <TaiLieuHocTap /> },
 

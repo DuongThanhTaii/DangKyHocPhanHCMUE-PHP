@@ -18,6 +18,7 @@ class UserProfile extends Model
     public $timestamps = true;
 
     protected $fillable = [
+        'id',
         'ma_nhan_vien',
         'ho_ten',
         'tai_khoan_id',

@@ -125,7 +125,7 @@ export default function LichSuDangKy() {
                     Đang tải lịch sử...
                   </td>
                 </tr>
-              ) : !lichSuData || lichSuData.lichSu.length === 0 ? (
+              ) : !lichSuData || !lichSuData.lichSu || lichSuData.lichSu.length === 0 ? (
                 <tr>
                   <td colSpan={7} style={{ textAlign: "center", padding: 20 }}>
                     {selectedHocKyId

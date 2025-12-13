@@ -302,8 +302,8 @@ GET  /api/payment/status/:transactionId
   GetTuitionDetailsUseCase; // Chi tiết học phí
 
 // Endpoints
-POST / api / tuition / compute; // PDT tính học phí
-GET / api / hoc - phi / chi - tiet; // SV xem học phí
+POST /api/tuition/compute; // PDT tính học phí
+GET /api/hoc-phi/chi-tiet; // SV xem học phí
 ```
 
 ---

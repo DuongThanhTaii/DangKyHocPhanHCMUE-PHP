@@ -21,7 +21,7 @@ export const tkApi = {
         data: UpdateTrangThaiByPDTRequest
     ): Promise<ServiceResult<null>> => {
         return await fetchJSON("tk/de-xuat-hoc-phan/duyet", {
-            method: "PATCH",
+            method: "POST",
             body: data,
         });
     },
@@ -33,7 +33,7 @@ export const tkApi = {
         data: TuChoiDeXuatHocPhanRequest
     ): Promise<ServiceResult<null>> => {
         return await fetchJSON("tk/de-xuat-hoc-phan/tu-choi", {
-            method: "PATCH",
+            method: "POST",
             body: data,
         });
     },

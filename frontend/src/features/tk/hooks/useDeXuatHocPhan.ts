@@ -23,7 +23,17 @@ export const useDeXuatHocPhan = () => {
       const result = await tkApi.getDeXuatHocPhan();
 
       if (result.isSuccess && result.data) {
-        setData(result.data);
+        // Map nested API response to flat DTO format
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedData: DeXuatHocPhanForTruongKhoaDTO[] = result.data.map((item: any) => ({
+          id: item.id,
+          maHocPhan: item.monHoc?.maMon || item.maHocPhan || "",
+          tenHocPhan: item.monHoc?.tenMon || item.tenHocPhan || "",
+          soTinChi: item.monHoc?.soTinChi || item.soTinChi || 0,
+          giangVien: item.giangVienDeXuat?.hoTen || item.giangVien || "",
+          trangThai: item.trangThai || "",
+        }));
+        setData(mappedData);
       } else {
         setError(result.message || "Không thể lấy danh sách đề xuất");
         setData([]);

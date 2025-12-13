@@ -34,14 +34,14 @@ export interface HocPhanForCreateLopDTO {
 
 export interface MonHocDTO {
     id: string;
-    ma_mon: string;
-    ten_mon: string;
-    so_tin_chi: number;
+    maMon: string;
+    tenMon: string;
+    soTinChi: number;
 }
 
 export interface GiangVienDTO {
     id: string;
-    ho_ten: string;
+    hoTen: string;
 }
 
 export interface HocKyHienHanhDTO {
@@ -83,6 +83,7 @@ export interface ThongTinLopHoc {
 export interface XepTKBRequest {
     maHocPhan: string;
     hocKyId: string;
+    giangVienId?: string; // Optional - giảng viên phụ trách
     danhSachLop: ThongTinLopHoc[];
 }
 

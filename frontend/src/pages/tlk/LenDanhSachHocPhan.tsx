@@ -30,7 +30,7 @@ const LenDanhSachHocPhan: React.FC = () => {
   const fuse = useMemo(
     () =>
       new Fuse<MonHocDTO>(monHocs, {
-        keys: ["ma_mon", "ten_mon"],
+        keys: ["maMon", "tenMon"],
         threshold: 0.3,
       }),
     [monHocs]
@@ -175,7 +175,7 @@ const LenDanhSachHocPhan: React.FC = () => {
       });
 
       if (result.isSuccess) {
-        openNotify?.(`Đã thêm đề xuất: ${monHoc.ten_mon}`, "success");
+        openNotify?.(`Đã thêm đề xuất: ${monHoc.tenMon}`, "success");
         await fetchMonHocs(); // Reload
       } else {
         openNotify?.(result.message || "Thêm đề xuất thất bại", "error");
@@ -249,9 +249,9 @@ const LenDanhSachHocPhan: React.FC = () => {
                       onChange={() => toggleSelectMon(mh.id)}
                     />
                   </td>
-                  <td>{mh.ma_mon}</td>
-                  <td>{mh.ten_mon}</td>
-                  <td>{mh.so_tin_chi}</td>
+                  <td>{mh.maMon}</td>
+                  <td>{mh.tenMon}</td>
+                  <td>{mh.soTinChi}</td>
                   <td>
                     {checked && (
                       <select
@@ -262,7 +262,7 @@ const LenDanhSachHocPhan: React.FC = () => {
                         <option value="">-- Chọn --</option>
                         {gvs.map((gv) => (
                           <option key={gv.id} value={gv.id}>
-                            {gv.ho_ten}
+                            {gv.hoTen}
                           </option>
                         ))}
                       </select>

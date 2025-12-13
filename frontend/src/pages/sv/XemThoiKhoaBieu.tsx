@@ -162,8 +162,13 @@ export default function XemThoiKhoaBieu() {
   const getCellItems = (roomId: string, dateString: string) => {
     return tkb
       .filter((item) => {
-        const itemDate = new Date(item.ngay_hoc).toISOString().split("T")[0];
-        return item.phong.id === roomId && itemDate === dateString;
+        if (!item.ngay_hoc) return false;
+        try {
+          const itemDate = new Date(item.ngay_hoc).toISOString().split("T")[0];
+          return item.phong.id === roomId && itemDate === dateString;
+        } catch {
+          return false;
+        }
       })
       .sort((a, b) => a.tiet_bat_dau - b.tiet_bat_dau);
   };

@@ -33,7 +33,8 @@ class EloquentAuthRepository implements AuthRepositoryInterface
             $account->ten_dang_nhap,                    // tenDangNhap
             $profile?->ho_ten,                          // hoTen
             $profile?->email,                           // email
-            $account->loai_tai_khoan                    // loaiTaiKhoan
+            $account->loai_tai_khoan,                   // loaiTaiKhoan
+            $profile?->ma_nhan_vien                     // maNhanVien
         );
     }
 

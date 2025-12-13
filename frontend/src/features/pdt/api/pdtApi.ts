@@ -101,7 +101,7 @@ export const pdtApi = {
         data: UpdateTrangThaiByPDTRequest
     ): Promise<ServiceResult<null>> => {
         return await fetchJSON("pdt/de-xuat-hoc-phan/duyet", {
-            method: "PATCH",
+            method: "POST",
             body: data,
         });
     },
@@ -113,7 +113,7 @@ export const pdtApi = {
         data: TuChoiDeXuatHocPhanRequest
     ): Promise<ServiceResult<null>> => {
         return await fetchJSON("pdt/de-xuat-hoc-phan/tu-choi", {
-            method: "PATCH",
+            method: "POST",
             body: data,
         });
     },
@@ -526,7 +526,7 @@ export const pdtApi = {
      */
     togglePhase: async (data: { hocKyId?: string; phase: string }): Promise<ServiceResult<{ isEnabled: boolean; phase: string }>> => {
         return await fetchJSON("pdt/ky-phase/toggle", {
-            method: "PATCH",
+            method: "POST",
             body: data,
         });
     },

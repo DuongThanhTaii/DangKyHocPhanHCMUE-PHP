@@ -11,38 +11,45 @@ import type {
     GiangVienDTO,
     HocKyHienHanhResponse,
 } from "../types";
+import { cachedFetch, clearCacheByPattern, SHORT_CACHE_TTL } from "../../../utils/apiCache";
+
+// Helper to invalidate TLK cache after mutations
+const invalidateTlkCache = () => {
+    clearCacheByPattern("tlk/");
+};
 
 export const tlkAPI = {
     // ============ Học kỳ hiện hành ============
     /**
-     * Lấy thông tin học kỳ hiện hành
+     * Lấy thông tin học kỳ hiện hành - CACHED
      */
     getHocKyHienHanh: async (): Promise<ServiceResult<HocKyHienHanhResponse>> => {
-        return await fetchJSON("hien-hanh", {
-            method: "GET",
-        });
+        return cachedFetch("tlk/hien-hanh", () =>
+            fetchJSON("hien-hanh", { method: "GET" })
+        );
     },
 
     // ============ Môn học theo khoa của TLK ============
     /**
-     * Lấy danh sách môn học theo khoa của TLK
+     * Lấy danh sách môn học theo khoa của TLK - CACHED
      */
     getMonHoc: async (): Promise<ServiceResult<MonHocDTO[]>> => {
-        return await fetchJSON("tlk/mon-hoc", {
-            method: "GET",
-        });
+        return cachedFetch("tlk/mon-hoc", () =>
+            fetchJSON("tlk/mon-hoc", { method: "GET" })
+        );
     },
 
     // ============ Giảng viên theo khoa của TLK ============
     /**
-     * Lấy danh sách giảng viên theo khoa của TLK
+     * Lấy danh sách giảng viên theo khoa của TLK - CACHED
      * @param monHocId - Optional: filter by mon_hoc_id
      */
     getGiangVien: async (monHocId?: string): Promise<ServiceResult<GiangVienDTO[]>> => {
         const url = monHocId ? `tlk/giang-vien?mon_hoc_id=${monHocId}` : "tlk/giang-vien";
-        return await fetchJSON(url, {
-            method: "GET",
-        });
+        const key = monHocId ? `tlk/giang-vien/${monHocId}` : "tlk/giang-vien";
+        return cachedFetch(key, () =>
+            fetchJSON(url, { method: "GET" })
+        );
     },
 
     // ============ Đề xuất học phần ============
@@ -50,6 +57,7 @@ export const tlkAPI = {
      * Tạo đề xuất học phần
      */
     createDeXuatHocPhan: async (data: DeXuatHocPhanRequest): Promise<ServiceResult<null>> => {
+        invalidateTlkCache();
         return await fetchJSON("tlk/de-xuat-hoc-phan", {
             method: "POST",
             body: data,
@@ -57,18 +65,19 @@ export const tlkAPI = {
     },
 
     getDeXuatHocPhan: async (): Promise<ServiceResult<DeXuatHocPhanForTroLyKhoaDTO[]>> => {
-        return await fetchJSON("tlk/de-xuat-hoc-phan", {
-            method: "GET",
-        });
+        return cachedFetch("tlk/de-xuat-hoc-phan", () =>
+            fetchJSON("tlk/de-xuat-hoc-phan", { method: "GET" }),
+            SHORT_CACHE_TTL
+        );
     },
 
     /**
-     * COPY từ PDT - Lấy phòng học available
+     * COPY từ PDT - Lấy phòng học available - CACHED
      */
     getAvailablePhongHoc: async (): Promise<ServiceResult<PhongHocDTO[]>> => {
-        return await fetchJSON("tlk/phong-hoc/available", {
-            method: "GET",
-        });
+        return cachedFetch("tlk/phong-hoc/available", () =>
+            fetchJSON("tlk/phong-hoc/available", { method: "GET" })
+        );
     },
 
     /**

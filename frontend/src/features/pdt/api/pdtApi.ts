@@ -29,9 +29,17 @@ import type {
     OverviewPayload,
     BaoCaoTaiGVResponse,
 } from "../types/pdtTypes";
+import { cachedFetch, clearCacheByPattern, SHORT_CACHE_TTL } from "../../../utils/apiCache";
+
+// Helper to invalidate PDT cache after mutations
+const invalidatePdtCache = () => {
+    clearCacheByPattern("pdt/");
+    clearCacheByPattern("bao-cao/");
+    clearCacheByPattern("dm/");
+};
 
 /**
- * PDT API Service
+ * PDT API Service - WITH CACHING
  */
 export const pdtApi = {
     /**
@@ -40,6 +48,7 @@ export const pdtApi = {
     setHocKyHienHanh: async (
         data: SetHocKyHienThanhRequest
     ): Promise<ServiceResult<HocKyDTO>> => {
+        invalidatePdtCache();
         return await fetchJSON("pdt/quan-ly-hoc-ky/hoc-ky-hien-hanh", {
             method: "POST",
             body: data,
@@ -52,7 +61,7 @@ export const pdtApi = {
     setHocKyHienTai: async (
         data: { id_nien_khoa?: string; id_hoc_ky: string; ngay_bat_dau: string; ngay_ket_thuc: string }
     ): Promise<ServiceResult<KyPhaseResponseDTO>> => {
-        // Map to the new API format
+        invalidatePdtCache();
         return await fetchJSON("hoc-ky/dates", {
             method: "PATCH",
             body: {
@@ -69,6 +78,7 @@ export const pdtApi = {
     createBulkKyPhase: async (
         data: CreateBulkKyPhaseRequest
     ): Promise<ServiceResult<KyPhaseResponseDTO[]>> => {
+        invalidatePdtCache();
         return await fetchJSON("pdt/quan-ly-hoc-ky/ky-phase/bulk", {
             method: "POST",
             body: data,
@@ -77,21 +87,22 @@ export const pdtApi = {
 
 
     /**
-     * Lấy tất cả phases theo học kỳ ID (PDT only)
+     * Lấy tất cả phases theo học kỳ ID (PDT only) - CACHED
      */
     getPhasesByHocKy: async (hocKyId: string): Promise<ServiceResult<PhasesByHocKyDTO>> => {
-        return await fetchJSON(`pdt/quan-ly-hoc-ky/ky-phase/${hocKyId}`, {
-            method: "GET",
-        });
+        return cachedFetch(`pdt/quan-ly-hoc-ky/ky-phase/${hocKyId}`, () =>
+            fetchJSON(`pdt/quan-ly-hoc-ky/ky-phase/${hocKyId}`, { method: "GET" })
+        );
     },
 
     /**
-     * Lấy danh sách đề xuất học phần cho PDT
+     * Lấy danh sách đề xuất học phần cho PDT - CACHED
      */
     getDeXuatHocPhan: async (): Promise<ServiceResult<DeXuatHocPhanForPDTDTO[]>> => {
-        return await fetchJSON("pdt/de-xuat-hoc-phan", {
-            method: "GET",
-        });
+        return cachedFetch("pdt/de-xuat-hoc-phan", () =>
+            fetchJSON("pdt/de-xuat-hoc-phan", { method: "GET" }),
+            SHORT_CACHE_TTL
+        );
     },
 
     /**
@@ -100,6 +111,7 @@ export const pdtApi = {
     duyetDeXuatHocPhan: async (
         data: UpdateTrangThaiByPDTRequest
     ): Promise<ServiceResult<null>> => {
+        invalidatePdtCache();
         return await fetchJSON("pdt/de-xuat-hoc-phan/duyet", {
             method: "POST",
             body: data,
@@ -112,6 +124,7 @@ export const pdtApi = {
     tuChoiDeXuatHocPhan: async (
         data: TuChoiDeXuatHocPhanRequest
     ): Promise<ServiceResult<null>> => {
+        invalidatePdtCache();
         return await fetchJSON("pdt/de-xuat-hoc-phan/tu-choi", {
             method: "POST",
             body: data,
@@ -119,12 +132,12 @@ export const pdtApi = {
     },
 
     /**
-     * Lấy danh sách khoa
+     * Lấy danh sách khoa - CACHED
      */
     getDanhSachKhoa: async (): Promise<ServiceResult<KhoaDTO[]>> => {
-        return await fetchJSON("pdt/khoa", {
-            method: "GET",
-        });
+        return cachedFetch("pdt/khoa", () =>
+            fetchJSON("pdt/khoa", { method: "GET" })
+        );
     },
 
     /**
@@ -133,6 +146,7 @@ export const pdtApi = {
     updateDotGhiDanh: async (
         data: UpdateDotGhiDanhRequest
     ): Promise<ServiceResult<DotGhiDanhResponseDTO[]>> => {
+        invalidatePdtCache();
         return await fetchJSON("pdt/dot-ghi-danh/update", {
             method: "POST",
             body: data,
@@ -140,32 +154,32 @@ export const pdtApi = {
     },
 
     /**
-     * Lấy danh sách đợt ghi danh theo học kỳ
+     * Lấy danh sách đợt ghi danh theo học kỳ - CACHED
      */
     getDotGhiDanhByHocKy: async (
         hocKyId: string
     ): Promise<ServiceResult<DotGhiDanhResponseDTO[]>> => {
-        return await fetchJSON(`pdt/dot-dang-ky/${hocKyId}`, {
-            method: "GET",
-        });
+        return cachedFetch(`pdt/dot-dang-ky/${hocKyId}`, () =>
+            fetchJSON(`pdt/dot-dang-ky/${hocKyId}`, { method: "GET" })
+        );
     },
 
     /**
-     * Lấy danh sách phòng học available (chưa được phân)
+     * Lấy danh sách phòng học available (chưa được phân) - CACHED
      */
     getAvailablePhongHoc: async (): Promise<ServiceResult<PhongHocDTO[]>> => {
-        return await fetchJSON("pdt/phong-hoc/available", {
-            method: "GET",
-        });
+        return cachedFetch("pdt/phong-hoc/available", () =>
+            fetchJSON("pdt/phong-hoc/available", { method: "GET" })
+        );
     },
 
     /**
-     * Lấy danh sách phòng học của khoa
+     * Lấy danh sách phòng học của khoa - CACHED
      */
     getPhongHocByKhoa: async (khoaId: string): Promise<ServiceResult<PhongHocDTO[]>> => {
-        return await fetchJSON(`pdt/phong-hoc/khoa/${khoaId}`, {
-            method: "GET",
-        });
+        return cachedFetch(`pdt/phong-hoc/khoa/${khoaId}`, () =>
+            fetchJSON(`pdt/phong-hoc/khoa/${khoaId}`, { method: "GET" })
+        );
     },
 
     /**
@@ -176,6 +190,7 @@ export const pdtApi = {
         khoaId: string,
         phongId: string | string[]
     ): Promise<ServiceResult<{ count: number }>> => {
+        invalidatePdtCache();
         return await fetchJSON(`pdt/phong-hoc/assign`, {
             method: "POST",
             body: {
@@ -192,6 +207,7 @@ export const pdtApi = {
         khoaId: string,
         phongId: string
     ): Promise<ServiceResult<{ count: number }>> => {
+        invalidatePdtCache();
         return await fetchJSON(`pdt/phong-hoc/unassign`, {
             method: "POST",
             body: {
@@ -202,16 +218,19 @@ export const pdtApi = {
     },
 
     /**
-     * Lấy danh sách đợt đăng ký học phần theo học kỳ
+     * Lấy danh sách đợt đăng ký học phần theo học kỳ - CACHED
      */
     getDotDangKyByHocKy: async (hocKyId: string): Promise<ServiceResult<DotDangKyResponseDTO[]>> => {
-        return await fetchJSON(`pdt/dot-dang-ky?hoc_ky_id=${hocKyId}`);
+        return cachedFetch(`pdt/dot-dang-ky?hoc_ky_id=${hocKyId}`, () =>
+            fetchJSON(`pdt/dot-dang-ky?hoc_ky_id=${hocKyId}`)
+        );
     },
 
     /**
      * Cập nhật/Tạo mới đợt đăng ký học phần
      */
     updateDotDangKy: async (data: UpdateDotDangKyRequest): Promise<ServiceResult<null>> => {
+        invalidatePdtCache();
         return await fetchJSON("pdt/dot-dang-ky", {
             method: "PUT",
             body: data,

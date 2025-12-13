@@ -3,34 +3,31 @@
 namespace App\Http\Controllers\Api\Pdt;
 
 use App\Http\Controllers\Controller;
-use App\Infrastructure\Common\Persistence\Models\Khoa;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use App\Application\Pdt\UseCases\GetKhoaListUseCase;
 
+/**
+ * KhoaController - Quản lý khoa (Refactored - Clean Architecture)
+ * 
+ * Thin controller - delegates business logic to UseCases
+ */
 class KhoaController extends Controller
 {
+    public function __construct(
+        private GetKhoaListUseCase $getListUseCase,
+    ) {
+    }
+
     /**
      * GET /api/pdt/khoa
      * Get departments list
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         try {
-            $khoas = Khoa::orderBy('ten_khoa', 'asc')->get();
-
-            $data = $khoas->map(function ($k) {
-                return [
-                    'id' => $k->id,
-                    'maKhoa' => $k->ma_khoa ?? '',
-                    'tenKhoa' => $k->ten_khoa ?? '',
-                ];
-            });
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => $data,
-                'message' => "Lấy thành công {$data->count()} khoa"
-            ]);
-
+            $result = $this->getListUseCase->execute();
+            return response()->json($result);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,

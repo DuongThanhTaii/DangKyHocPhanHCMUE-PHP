@@ -3,55 +3,42 @@
 namespace App\Http\Controllers\Api\Pdt;
 
 use App\Http\Controllers\Controller;
-use App\Infrastructure\SinhVien\Persistence\Models\MonHoc;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
+use App\Application\Pdt\DTOs\CreateMonHocDTO;
+use App\Application\Pdt\DTOs\UpdateMonHocDTO;
+use App\Application\Pdt\UseCases\GetMonHocListUseCase;
+use App\Application\Pdt\UseCases\CreateMonHocUseCase;
+use App\Application\Pdt\UseCases\UpdateMonHocUseCase;
+use App\Application\Pdt\UseCases\DeleteMonHocUseCase;
 
+/**
+ * MonHocController - Quản lý môn học (Refactored - Clean Architecture)
+ * 
+ * Thin controller - delegates business logic to UseCases
+ */
 class MonHocController extends Controller
 {
+    public function __construct(
+        private GetMonHocListUseCase $getListUseCase,
+        private CreateMonHocUseCase $createUseCase,
+        private UpdateMonHocUseCase $updateUseCase,
+        private DeleteMonHocUseCase $deleteUseCase,
+    ) {
+    }
+
     /**
      * GET /api/pdt/mon-hoc
      * Get all courses
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         try {
             $page = (int) $request->query('page', 1);
             $pageSize = (int) $request->query('pageSize', 10000);
 
-            $monHocs = MonHoc::with('khoa')
-                ->orderBy('ma_mon', 'asc')
-                ->skip(($page - 1) * $pageSize)
-                ->take($pageSize)
-                ->get();
-
-            $data = $monHocs->map(function ($m) {
-                return [
-                    'id' => $m->id,
-                    'ma_mon' => $m->ma_mon ?? '',
-                    'ten_mon' => $m->ten_mon ?? '',
-                    'so_tin_chi' => $m->so_tin_chi ?? 0,
-                    'khoa_id' => $m->khoa_id,
-                    'loai_mon' => $m->loai_mon ?? null,
-                    'la_mon_chung' => $m->la_mon_chung ?? false,
-                    'thu_tu_hoc' => $m->thu_tu_hoc ?? null,
-                    'khoa' => $m->khoa ? [
-                        'id' => $m->khoa->id,
-                        'ten_khoa' => $m->khoa->ten_khoa ?? '',
-                    ] : null,
-                    'mon_hoc_nganh' => [],
-                ];
-            });
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => [
-                    'items' => $data,
-                    'total' => $data->count(),
-                ],
-                'message' => "Lấy thành công {$data->count()} môn học"
-            ]);
-
+            $result = $this->getListUseCase->execute($page, $pageSize);
+            return response()->json($result);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -65,37 +52,18 @@ class MonHocController extends Controller
      * POST /api/pdt/mon-hoc
      * Create course
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         try {
-            $maMon = $request->input('maMon') ?? $request->input('ma_mon');
-            $tenMon = $request->input('tenMon') ?? $request->input('ten_mon');
-
-            if (!$maMon || !$tenMon) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Thiếu thông tin bắt buộc (maMon, tenMon)'
-                ], 400);
-            }
-
-            $monHoc = MonHoc::create([
-                'id' => Str::uuid()->toString(),
-                'ma_mon' => $maMon,
-                'ten_mon' => $tenMon,
-                'so_tin_chi' => $request->input('soTinChi') ?? $request->input('so_tin_chi') ?? 0,
-                'khoa_id' => $request->input('khoaId') ?? $request->input('khoa_id'),
-                'loai_mon' => $request->input('loaiMon') ?? $request->input('loai_mon'),
-                'la_mon_chung' => filter_var($request->input('laMonChung') ?? $request->input('la_mon_chung') ?? false, FILTER_VALIDATE_BOOLEAN),
-                'thu_tu_hoc' => $request->input('thuTuHoc') ?? $request->input('thu_tu_hoc') ?? 1,
-            ]);
-
+            $dto = CreateMonHocDTO::fromRequest($request->all());
+            $result = $this->createUseCase->execute($dto);
+            return response()->json($result, 201);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
-                'isSuccess' => true,
-                'data' => ['id' => $monHoc->id],
-                'message' => 'Tạo môn học thành công'
-            ], 201);
-
+                'isSuccess' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ], 400);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -109,40 +77,18 @@ class MonHocController extends Controller
      * PUT /api/pdt/mon-hoc/{id}
      * Update course
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): JsonResponse
     {
         try {
-            $monHoc = MonHoc::find($id);
-
-            if (!$monHoc) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Không tìm thấy môn học'
-                ], 404);
-            }
-
-            if ($request->has('maMon') || $request->has('ma_mon')) {
-                $monHoc->ma_mon = $request->input('maMon') ?? $request->input('ma_mon');
-            }
-            if ($request->has('tenMon') || $request->has('ten_mon')) {
-                $monHoc->ten_mon = $request->input('tenMon') ?? $request->input('ten_mon');
-            }
-            if ($request->has('soTinChi') || $request->has('so_tin_chi')) {
-                $monHoc->so_tin_chi = $request->input('soTinChi') ?? $request->input('so_tin_chi');
-            }
-            if ($request->has('khoaId') || $request->has('khoa_id')) {
-                $monHoc->khoa_id = $request->input('khoaId') ?? $request->input('khoa_id');
-            }
-
-            $monHoc->save();
-
+            $dto = UpdateMonHocDTO::fromRequest($request->all());
+            $result = $this->updateUseCase->execute($id, $dto);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
             return response()->json([
-                'isSuccess' => true,
-                'data' => ['id' => $monHoc->id],
-                'message' => 'Cập nhật môn học thành công'
-            ]);
-
+                'isSuccess' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -156,27 +102,17 @@ class MonHocController extends Controller
      * DELETE /api/pdt/mon-hoc/{id}
      * Delete course
      */
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         try {
-            $monHoc = MonHoc::find($id);
-
-            if (!$monHoc) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Không tìm thấy môn học'
-                ], 404);
-            }
-
-            $monHoc->delete();
-
+            $result = $this->deleteUseCase->execute($id);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
             return response()->json([
-                'isSuccess' => true,
+                'isSuccess' => false,
                 'data' => null,
-                'message' => 'Xóa môn học thành công'
-            ]);
-
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,

@@ -3,46 +3,55 @@
 namespace App\Http\Controllers\Api\GiangVien;
 
 use App\Http\Controllers\Controller;
-use App\Infrastructure\GiangVien\Persistence\Models\GiangVien;
-use App\Infrastructure\GiangVien\Persistence\Models\DiemSinhVien;
-use App\Infrastructure\SinhVien\Persistence\Models\LopHocPhan;
-use App\Infrastructure\SinhVien\Persistence\Models\DangKyHocPhan;
-use App\Infrastructure\SinhVien\Persistence\Models\TaiLieu;
-use App\Infrastructure\Auth\Persistence\Models\UserProfile;
-use App\Infrastructure\Common\Persistence\Models\HocKy;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use App\Application\GiangVien\UseCases\GetLopHocPhanForGVUseCase;
+use App\Application\GiangVien\UseCases\GetStudentsInClassUseCase;
+use App\Application\GiangVien\UseCases\GetGradesForClassUseCase;
+use App\Application\GiangVien\UseCases\UpdateGradesUseCase;
+use App\Application\GiangVien\UseCases\GetGVWeeklyScheduleUseCase;
+use App\Domain\GiangVien\Repositories\GVRepositoryInterface;
+use App\Infrastructure\Auth\Persistence\Models\UserProfile;
+use App\Infrastructure\SinhVien\Persistence\Models\TaiLieu;
 use Illuminate\Support\Facades\Storage;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Str;
 
+/**
+ * GVController - Endpoints cho Giảng viên (Refactored - Clean Architecture)
+ * 
+ * Thin controller - delegates business logic to UseCases
+ */
 class GVController extends Controller
 {
+    public function __construct(
+        private GetLopHocPhanForGVUseCase $getLopUseCase,
+        private GetStudentsInClassUseCase $getStudentsUseCase,
+        private GetGradesForClassUseCase $getGradesUseCase,
+        private UpdateGradesUseCase $updateGradesUseCase,
+        private GetGVWeeklyScheduleUseCase $getScheduleUseCase,
+        private GVRepositoryInterface $repository,
+    ) {
+    }
+
     /**
-     * Get GiangVien from JWT token
+     * Get UserProfile from JWT token
      */
-    private function getGiangVienFromToken()
+    private function getUserProfileFromToken(): ?UserProfile
     {
         $taiKhoan = JWTAuth::parseToken()->authenticate();
-        $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
-
-        if (!$userProfile) {
-            return null;
-        }
-
-        return GiangVien::find($userProfile->id);
+        return UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
     }
 
     /**
      * GET /api/gv/lop-hoc-phan?hocKyId={id}
-     * Get list of LopHocPhan assigned to instructor
      */
-    public function getLopHocPhanList(Request $request)
+    public function getLopHocPhanList(Request $request): JsonResponse
     {
         try {
             $hocKyId = $request->query('hocKyId') ?? $request->query('hoc_ky_id');
 
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -52,73 +61,8 @@ class GVController extends Controller
                 ], 404);
             }
 
-            // Check if GiangVien record exists for this user
-            $giangVien = GiangVien::find($userProfile->id);
-
-            // DEBUG: Get all unique giang_vien_ids from lop_hoc_phan
-            $allGvIds = LopHocPhan::whereNotNull('giang_vien_id')
-                ->distinct()
-                ->pluck('giang_vien_id')
-                ->toArray();
-
-            // DEBUG: Log the query info
-            \Log::info("[GVController] getLopHocPhanList DEBUG:", [
-                'tai_khoan_id' => $taiKhoan->id,
-                'user_profile_id' => $userProfile->id,
-                'giang_vien_exists' => $giangVien ? true : false,
-                'all_gv_ids_in_lop_hoc_phan' => $allGvIds,
-            ]);
-
-            // Get LopHocPhan where giang_vien_id = user profile id
-            $query = LopHocPhan::with(['hocPhan.monHoc'])
-                ->where('giang_vien_id', $userProfile->id);
-
-            if ($hocKyId) {
-                $query->whereHas('hocPhan', function ($q) use ($hocKyId) {
-                    $q->where('id_hoc_ky', $hocKyId);
-                });
-            }
-
-            $lopHocPhans = $query->get();
-
-            // DEBUG: Also check how many classes have this giang_vien_id in general
-            $totalWithGvId = LopHocPhan::where('giang_vien_id', $userProfile->id)->count();
-            $totalClasses = LopHocPhan::count();
-
-            $data = $lopHocPhans->map(function ($lhp) {
-                $hocPhan = $lhp->hocPhan;
-                $monHoc = $hocPhan?->monHoc;
-
-                return [
-                    'id' => $lhp->id,
-                    'ma_lop' => $lhp->ma_lop,
-                    'so_luong_hien_tai' => $lhp->so_luong_hien_tai ?? 0,
-                    'so_luong_toi_da' => $lhp->so_luong_toi_da ?? 50,
-                    'hoc_phan' => [
-                        'ten_hoc_phan' => $hocPhan?->ten_hoc_phan ?? '',
-                        'mon_hoc' => [
-                            'ma_mon' => $monHoc?->ma_mon ?? '',
-                            'ten_mon' => $monHoc?->ten_mon ?? '',
-                            'so_tin_chi' => $monHoc?->so_tin_chi ?? 0,
-                        ],
-                    ],
-                ];
-            });
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => $data,
-                'message' => "Lấy thành công {$data->count()} lớp học phần",
-                // DEBUG info (remove in production)
-                'debug' => [
-                    'your_user_profile_id' => $userProfile->id,
-                    'giang_vien_record_exists' => $giangVien ? true : false,
-                    'total_classes_in_db' => $totalClasses,
-                    'classes_with_your_id' => $totalWithGvId,
-                    'all_giang_vien_ids_in_lop_hoc_phan' => $allGvIds,
-                    'hint' => 'If giang_vien_id in lop_hoc_phan does not match your user_profile_id, we need to fix the query logic',
-                ]
-            ]);
+            $result = $this->getLopUseCase->execute($userProfile->id, $hocKyId);
+            return response()->json($result);
 
         } catch (\Throwable $e) {
             return response()->json([
@@ -131,13 +75,11 @@ class GVController extends Controller
 
     /**
      * GET /api/gv/lop-hoc-phan/{id}
-     * Get LopHocPhan detail
      */
-    public function getLopHocPhanDetail(Request $request, $id)
+    public function getLopHocPhanDetail(Request $request, $id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -147,9 +89,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::with(['hocPhan.monHoc.khoa', 'lichHocDinhKys.phong'])
-                ->where('giang_vien_id', $userProfile->id)
-                ->find($id);
+            $lhp = $this->repository->findLopHocPhanByGV($id, $userProfile->id);
 
             if (!$lhp) {
                 return response()->json([
@@ -205,13 +145,11 @@ class GVController extends Controller
 
     /**
      * GET /api/gv/lop-hoc-phan/{id}/sinh-vien
-     * Get students of a LopHocPhan
      */
-    public function getLopHocPhanStudents(Request $request, $id)
+    public function getLopHocPhanStudents(Request $request, $id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -221,42 +159,15 @@ class GVController extends Controller
                 ], 404);
             }
 
-            // Check if this LHP belongs to the instructor
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
+            $result = $this->getStudentsUseCase->execute($id, $userProfile->id);
+            return response()->json($result);
 
-            if (!$lhp) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Không tìm thấy lớp học phần hoặc không có quyền truy cập'
-                ], 404);
-            }
-
-            // Get students registered in this class
-            $dangKys = DangKyHocPhan::with(['sinhVien.user'])
-                ->where('lop_hoc_phan_id', $id)
-                ->where('trang_thai', 'da_dang_ky')
-                ->get();
-
-            $data = $dangKys->map(function ($dk) {
-                $sv = $dk->sinhVien;
-                $user = $sv?->user;
-
-                return [
-                    'id' => $sv?->id ?? '',
-                    'maSoSinhVien' => $sv?->ma_so_sinh_vien ?? '',
-                    'hoTen' => $user?->ho_ten ?? '',
-                    'email' => $user?->email ?? '',
-                    'lop' => $sv?->lop ?? '',
-                ];
-            });
-
+        } catch (\RuntimeException $e) {
             return response()->json([
-                'isSuccess' => true,
-                'data' => $data,
-                'message' => "Lấy thành công {$data->count()} sinh viên"
-            ]);
-
+                'isSuccess' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -268,13 +179,11 @@ class GVController extends Controller
 
     /**
      * GET /api/gv/lop-hoc-phan/{id}/diem
-     * Get grades for a LopHocPhan
      */
-    public function getGrades(Request $request, $id)
+    public function getGrades(Request $request, $id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -284,49 +193,15 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
+            $result = $this->getGradesUseCase->execute($id, $userProfile->id);
+            return response()->json($result);
 
-            if (!$lhp) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Không tìm thấy lớp học phần hoặc không có quyền truy cập'
-                ], 404);
-            }
-
-            // Get students and their grades
-            $dangKys = DangKyHocPhan::with(['sinhVien.user'])
-                ->where('lop_hoc_phan_id', $id)
-                ->where('trang_thai', 'da_dang_ky')
-                ->get();
-
-            $data = $dangKys->map(function ($dk) use ($id) {
-                $sv = $dk->sinhVien;
-                $user = $sv?->user;
-
-                // Get grade if exists
-                $diem = DiemSinhVien::where('sinh_vien_id', $sv?->id)
-                    ->where('lop_hoc_phan_id', $id)
-                    ->first();
-
-                return [
-                    'sinhVienId' => $sv?->id ?? '',
-                    'maSoSinhVien' => $sv?->ma_so_sinh_vien ?? '',
-                    'hoTen' => $user?->ho_ten ?? '',
-                    'diemChuyenCan' => $diem?->diem_chuyen_can ?? null,
-                    'diemGiuaKy' => $diem?->diem_giua_ky ?? null,
-                    'diemCuoiKy' => $diem?->diem_cuoi_ky ?? null,
-                    'diemTongKet' => $diem?->diem_tong_ket ?? null,
-                    'ghiChu' => $diem?->ghi_chu ?? '',
-                ];
-            });
-
+        } catch (\RuntimeException $e) {
             return response()->json([
-                'isSuccess' => true,
-                'data' => $data,
-                'message' => "Lấy điểm thành công"
-            ]);
-
+                'isSuccess' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -338,14 +213,11 @@ class GVController extends Controller
 
     /**
      * PUT /api/gv/lop-hoc-phan/{id}/diem
-     * Update grades for a LopHocPhan
-     * Body: { "items": [{ "sinhVienId": "...", "diemChuyenCan": 8.0, ... }] }
      */
-    public function updateGrades(Request $request, $id)
+    public function updateGrades(Request $request, $id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -355,58 +227,23 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
-
-            if (!$lhp) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Không tìm thấy lớp học phần hoặc không có quyền truy cập'
-                ], 404);
-            }
-
             $items = $request->input('items') ?? $request->input('diem', []);
 
-            if (empty($items)) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Không có dữ liệu điểm để cập nhật'
-                ], 400);
-            }
+            $result = $this->updateGradesUseCase->execute($id, $userProfile->id, $items);
+            return response()->json($result);
 
-            $updatedCount = 0;
-
-            foreach ($items as $item) {
-                $sinhVienId = $item['sinhVienId'] ?? $item['sinh_vien_id'] ?? null;
-
-                if (!$sinhVienId)
-                    continue;
-
-                // Upsert grade record
-                DiemSinhVien::updateOrCreate(
-                    [
-                        'sinh_vien_id' => $sinhVienId,
-                        'lop_hoc_phan_id' => $id,
-                    ],
-                    [
-                        'diem_chuyen_can' => $item['diemChuyenCan'] ?? $item['diem_chuyen_can'] ?? null,
-                        'diem_giua_ky' => $item['diemGiuaKy'] ?? $item['diem_giua_ky'] ?? null,
-                        'diem_cuoi_ky' => $item['diemCuoiKy'] ?? $item['diem_cuoi_ky'] ?? null,
-                        'diem_tong_ket' => $item['diemTongKet'] ?? $item['diem_tong_ket'] ?? null,
-                        'ghi_chu' => $item['ghiChu'] ?? $item['ghi_chu'] ?? null,
-                    ]
-                );
-
-                $updatedCount++;
-            }
-
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
-                'isSuccess' => true,
-                'data' => ['updatedCount' => $updatedCount],
-                'message' => "Cập nhật điểm thành công ({$updatedCount} sinh viên)"
-            ]);
-
+                'isSuccess' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ], 400);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'data' => null,
+                'message' => $e->getMessage()
+            ], 404);
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -418,13 +255,11 @@ class GVController extends Controller
 
     /**
      * GET /api/gv/lop-hoc-phan/{id}/tai-lieu
-     * Get documents for a LopHocPhan
      */
-    public function getTaiLieuList(Request $request, $id)
+    public function getTaiLieuList(Request $request, $id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -434,7 +269,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
+            $lhp = $this->repository->findLopHocPhanByGV($id, $userProfile->id);
 
             if (!$lhp) {
                 return response()->json([
@@ -444,7 +279,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $taiLieus = TaiLieu::where('lop_hoc_phan_id', $id)->get();
+            $taiLieus = $this->repository->getDocumentsForClass($id);
 
             $data = $taiLieus->map(function ($tl) {
                 return [
@@ -473,13 +308,11 @@ class GVController extends Controller
 
     /**
      * POST /api/gv/lop-hoc-phan/{id}/tai-lieu/upload
-     * Upload document for a LopHocPhan
      */
-    public function uploadTaiLieu(Request $request, $id)
+    public function uploadTaiLieu(Request $request, $id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -489,7 +322,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
+            $lhp = $this->repository->findLopHocPhanByGV($id, $userProfile->id);
 
             if (!$lhp) {
                 return response()->json([
@@ -499,7 +332,6 @@ class GVController extends Controller
                 ], 404);
             }
 
-            // Check for file
             if (!$request->hasFile('file')) {
                 return response()->json([
                     'isSuccess' => false,
@@ -510,28 +342,20 @@ class GVController extends Controller
 
             $file = $request->file('file');
             $tenTaiLieu = $request->input('ten_tai_lieu', $file->getClientOriginalName());
-
-            // Generate S3 key
             $s3Key = "tai-lieu/{$id}/" . Str::uuid() . '_' . $file->getClientOriginalName();
 
-            // Check if S3 is configured
-            $s3Configured = config('filesystems.disks.s3.key') ? true : false;
-
-            if ($s3Configured) {
-                // Upload to S3
+            // Upload to S3 if configured
+            if (config('filesystems.disks.s3.key')) {
                 Storage::disk('s3')->put($s3Key, file_get_contents($file), 'private');
             }
 
-            // Save to database
-            $taiLieu = TaiLieu::create([
-                'id' => Str::uuid()->toString(),
+            $taiLieu = $this->repository->createDocument([
                 'lop_hoc_phan_id' => $id,
                 'uploaded_by' => $userProfile->id,
                 'ten_tai_lieu' => $tenTaiLieu,
                 'file_type' => $file->getClientMimeType(),
                 'file_size' => $file->getSize(),
                 's3_key' => $s3Key,
-                'created_at' => now(),
             ]);
 
             return response()->json([
@@ -554,13 +378,11 @@ class GVController extends Controller
 
     /**
      * GET /api/gv/lop-hoc-phan/{id}/tai-lieu/{doc_id}
-     * Get document details
      */
-    public function getTaiLieuDetail(Request $request, $id, $doc_id)
+    public function getTaiLieuDetail(Request $request, $id, $doc_id): JsonResponse
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -570,7 +392,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
+            $lhp = $this->repository->findLopHocPhanByGV($id, $userProfile->id);
 
             if (!$lhp) {
                 return response()->json([
@@ -580,7 +402,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $taiLieu = TaiLieu::where('lop_hoc_phan_id', $id)->find($doc_id);
+            $taiLieu = $this->repository->findDocument($id, $doc_id);
 
             if (!$taiLieu) {
                 return response()->json([
@@ -613,13 +435,11 @@ class GVController extends Controller
 
     /**
      * GET /api/gv/lop-hoc-phan/{id}/tai-lieu/{doc_id}/download
-     * Download document
      */
     public function downloadTaiLieu(Request $request, $id, $doc_id)
     {
         try {
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -629,7 +449,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $lhp = LopHocPhan::where('giang_vien_id', $userProfile->id)->find($id);
+            $lhp = $this->repository->findLopHocPhanByGV($id, $userProfile->id);
 
             if (!$lhp) {
                 return response()->json([
@@ -639,7 +459,7 @@ class GVController extends Controller
                 ], 404);
             }
 
-            $taiLieu = TaiLieu::where('lop_hoc_phan_id', $id)->find($doc_id);
+            $taiLieu = $this->repository->findDocument($id, $doc_id);
 
             if (!$taiLieu) {
                 return response()->json([
@@ -649,7 +469,6 @@ class GVController extends Controller
                 ], 404);
             }
 
-            // Check S3 configuration
             if (!config('filesystems.disks.s3.key')) {
                 return response()->json([
                     'isSuccess' => false,
@@ -658,7 +477,6 @@ class GVController extends Controller
                 ], 503);
             }
 
-            // Get from S3
             $s3Key = $taiLieu->s3_key;
 
             if (!Storage::disk('s3')->exists($s3Key)) {
@@ -685,15 +503,12 @@ class GVController extends Controller
     }
 
     /**
-     * GET /api/gv/tkb-weekly?hocKyId={id}&dateStart={date}&dateEnd={date}
-     * Get instructor's weekly schedule
+     * GET /api/gv/tkb-weekly?hocKyId={id}&dateStart={}&dateEnd={}
      */
-    public function getTKBWeekly(Request $request)
+    public function getTKBWeekly(Request $request): JsonResponse
     {
         try {
             $hocKyId = $request->query('hocKyId') ?? $request->query('hoc_ky_id');
-            $dateStart = $request->query('dateStart') ?? $request->query('date_start');
-            $dateEnd = $request->query('dateEnd') ?? $request->query('date_end');
 
             if (!$hocKyId) {
                 return response()->json([
@@ -703,16 +518,7 @@ class GVController extends Controller
                 ], 400);
             }
 
-            if (!$dateStart || !$dateEnd) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'date_start and date_end are required'
-                ], 400);
-            }
-
-            $taiKhoan = JWTAuth::parseToken()->authenticate();
-            $userProfile = UserProfile::where('tai_khoan_id', $taiKhoan->id)->first();
+            $userProfile = $this->getUserProfileFromToken();
 
             if (!$userProfile) {
                 return response()->json([
@@ -722,37 +528,8 @@ class GVController extends Controller
                 ]);
             }
 
-            // Get all LopHocPhan for this instructor in this semester
-            $lopHocPhans = LopHocPhan::with(['lichHocDinhKys.phong', 'hocPhan.monHoc'])
-                ->where('giang_vien_id', $userProfile->id)
-                ->whereHas('hocPhan', function ($q) use ($hocKyId) {
-                    $q->where('id_hoc_ky', $hocKyId);
-                })
-                ->get();
-
-            $data = [];
-
-            foreach ($lopHocPhans as $lhp) {
-                $monHoc = $lhp->hocPhan?->monHoc;
-
-                foreach ($lhp->lichHocDinhKys as $lich) {
-                    $data[] = [
-                        'thu' => $lich->thu,
-                        'tietBatDau' => $lich->tiet_bat_dau,
-                        'tietKetThuc' => $lich->tiet_ket_thuc,
-                        'phong' => $lich->phong?->ma_phong ?? 'TBA',
-                        'maLop' => $lhp->ma_lop,
-                        'tenMon' => $monHoc?->ten_mon ?? '',
-                        'maMon' => $monHoc?->ma_mon ?? '',
-                    ];
-                }
-            }
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => $data,
-                'message' => 'Lấy thời khóa biểu thành công'
-            ]);
+            $result = $this->getScheduleUseCase->execute($userProfile->id, $hocKyId);
+            return response()->json($result);
 
         } catch (\Throwable $e) {
             return response()->json([

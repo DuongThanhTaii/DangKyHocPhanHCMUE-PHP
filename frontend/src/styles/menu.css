@@ -2301,3 +2301,17 @@ th {
   line-height: 1; /* tránh chữ bị lệch xuống */
   display: inline-block;
 }
+
+/* highlight row đang active */
+.cp-row.cp-row--active {
+  outline: 2px solid rgba(49, 143, 171, 0.9);
+  background: rgba(49, 143, 171, 0.12);
+  box-shadow: 0 0 0 4px rgba(49, 143, 171, 0.08);
+  border-radius: 10px;
+}
+
+/* optional: làm chữ nổi hơn một chút */
+.cp-row.cp-row--active .cp-label {
+  font-weight: 600;
+}
+

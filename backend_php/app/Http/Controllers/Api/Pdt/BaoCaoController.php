@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Api\Pdt;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Infrastructure\SinhVien\Persistence\Models\DangKyHocPhan;
-use App\Infrastructure\SinhVien\Persistence\Models\LopHocPhan;
-use App\Infrastructure\Payment\Persistence\Models\HocPhi;
+use Illuminate\Http\JsonResponse;
+use App\Application\Pdt\DTOs\BaoCaoFilterDTO;
+use App\Application\Pdt\UseCases\GetBaoCaoOverviewUseCase;
+use App\Application\Pdt\UseCases\GetDangKyTheoKhoaUseCase;
+use App\Application\Pdt\UseCases\GetDangKyTheoNganhUseCase;
+use App\Application\Pdt\UseCases\GetTaiGiangVienUseCase;
 
 /**
- * BaoCaoController - Thống kê báo cáo
+ * BaoCaoController - Thống kê báo cáo (Refactored - Clean Architecture)
+ * 
+ * Thin controller - delegates business logic to UseCases
  * 
  * Endpoints:
  * - GET /bao-cao/overview         - Thống kê tổng quan
@@ -20,92 +24,35 @@ use App\Infrastructure\Payment\Persistence\Models\HocPhi;
  */
 class BaoCaoController extends Controller
 {
+    public function __construct(
+        private GetBaoCaoOverviewUseCase $getBaoCaoOverviewUseCase,
+        private GetDangKyTheoKhoaUseCase $getDangKyTheoKhoaUseCase,
+        private GetDangKyTheoNganhUseCase $getDangKyTheoNganhUseCase,
+        private GetTaiGiangVienUseCase $getTaiGiangVienUseCase,
+    ) {
+    }
+
     /**
      * GET /bao-cao/overview
      * 
      * Thống kê tổng quan: SV unique, số đăng ký, số LHP, tài chính
      */
-    public function overview(Request $request)
+    public function overview(Request $request): JsonResponse
     {
-        $hocKyId = $request->query('hoc_ky_id');
-        $khoaId = $request->query('khoa_id');
-        $nganhId = $request->query('nganh_id');
+        try {
+            // 1. Map request to DTO
+            $dto = BaoCaoFilterDTO::fromRequest($request->query());
 
-        if (!$hocKyId) {
+            // 2. Execute use case
+            $result = $this->getBaoCaoOverviewUseCase->execute($dto);
+
+            // 3. Return response
+            return response()->json($result);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'hoc_ky_id is required'
+                'message' => $e->getMessage()
             ], 400);
-        }
-
-        try {
-            // Build base query for DangKyHocPhan
-            $dkQuery = DangKyHocPhan::query()
-                ->join('lop_hoc_phan', 'dang_ky_hoc_phan.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
-                ->join('hoc_phan', 'lop_hoc_phan.hoc_phan_id', '=', 'hoc_phan.id')
-                ->where('hoc_phan.id_hoc_ky', $hocKyId);
-
-            // Build base query for LopHocPhan
-            $lhpQuery = LopHocPhan::query()
-                ->join('hoc_phan', 'lop_hoc_phan.hoc_phan_id', '=', 'hoc_phan.id')
-                ->where('hoc_phan.id_hoc_ky', $hocKyId);
-
-            // Build base query for HocPhi
-            $hpQuery = HocPhi::query()
-                ->where('hoc_ky_id', $hocKyId);
-
-            // Apply Khoa filter if provided
-            if ($khoaId) {
-                $dkQuery->join('sinh_vien', 'dang_ky_hoc_phan.sinh_vien_id', '=', 'sinh_vien.id')
-                    ->where('sinh_vien.khoa_id', $khoaId);
-
-                $lhpQuery->join('mon_hoc', 'hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
-                    ->where('mon_hoc.khoa_id', $khoaId);
-
-                $hpQuery->join('sinh_vien as sv_hp', 'hoc_phi.sinh_vien_id', '=', 'sv_hp.id')
-                    ->where('sv_hp.khoa_id', $khoaId);
-            }
-
-            // Apply Nganh filter if provided
-            if ($nganhId) {
-                if (!$khoaId) {
-                    $dkQuery->join('sinh_vien', 'dang_ky_hoc_phan.sinh_vien_id', '=', 'sinh_vien.id');
-                    $hpQuery->join('sinh_vien as sv_hp', 'hoc_phi.sinh_vien_id', '=', 'sv_hp.id');
-                }
-                $dkQuery->where('sinh_vien.nganh_id', $nganhId);
-                $hpQuery->where('sv_hp.nganh_id', $nganhId);
-            }
-
-            // 1. SV Unique count
-            $svUnique = (clone $dkQuery)
-                ->distinct('dang_ky_hoc_phan.sinh_vien_id')
-                ->count('dang_ky_hoc_phan.sinh_vien_id');
-
-            // 2. Total registrations
-            $soDangKy = (clone $dkQuery)->count('dang_ky_hoc_phan.id');
-
-            // 3. Total class sections
-            $soLopHocPhan = (clone $lhpQuery)->count('lop_hoc_phan.id');
-
-            // 4. Financials
-            $kyVong = (clone $hpQuery)->sum('tong_hoc_phi') ?? 0;
-            $thucThu = (clone $hpQuery)
-                ->where('trang_thai_thanh_toan', 'DA_THANH_TOAN')
-                ->sum('tong_hoc_phi') ?? 0;
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => [
-                    'svUnique' => $svUnique,
-                    'soDangKy' => $soDangKy,
-                    'soLopHocPhan' => $soLopHocPhan,
-                    'taiChinh' => [
-                        'thuc_thu' => (float) $thucThu,
-                        'ky_vong' => (float) $kyVong,
-                    ],
-                    'ketLuan' => "Tổng quan: {$svUnique} sinh viên đã đăng ký {$soDangKy} lượt học phần.",
-                ],
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -119,43 +66,17 @@ class BaoCaoController extends Controller
      * 
      * Thống kê số lượng đăng ký theo từng khoa
      */
-    public function dangKyTheoKhoa(Request $request)
+    public function dangKyTheoKhoa(Request $request): JsonResponse
     {
-        $hocKyId = $request->query('hoc_ky_id');
-
-        if (!$hocKyId) {
+        try {
+            $dto = BaoCaoFilterDTO::fromRequest($request->query());
+            $result = $this->getDangKyTheoKhoaUseCase->execute($dto);
+            return response()->json($result);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'hoc_ky_id is required'
+                'message' => $e->getMessage()
             ], 400);
-        }
-
-        try {
-            $stats = DB::table('dang_ky_hoc_phan')
-                ->join('lop_hoc_phan', 'dang_ky_hoc_phan.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
-                ->join('hoc_phan', 'lop_hoc_phan.hoc_phan_id', '=', 'hoc_phan.id')
-                ->join('sinh_vien', 'dang_ky_hoc_phan.sinh_vien_id', '=', 'sinh_vien.id')
-                ->join('khoa', 'sinh_vien.khoa_id', '=', 'khoa.id')
-                ->where('hoc_phan.id_hoc_ky', $hocKyId)
-                ->select('khoa.ten_khoa', DB::raw('COUNT(dang_ky_hoc_phan.id) as so_dang_ky'))
-                ->groupBy('khoa.id', 'khoa.ten_khoa')
-                ->orderByDesc('so_dang_ky')
-                ->get();
-
-            $data = $stats->map(function ($item) {
-                return [
-                    'ten_khoa' => $item->ten_khoa,
-                    'so_dang_ky' => (int) $item->so_dang_ky,
-                ];
-            })->toArray();
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => [
-                    'data' => $data,
-                    'ketLuan' => 'Thống kê số lượng đăng ký theo từng khoa.',
-                ],
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -169,53 +90,17 @@ class BaoCaoController extends Controller
      * 
      * Thống kê số lượng đăng ký theo ngành
      */
-    public function dangKyTheoNganh(Request $request)
+    public function dangKyTheoNganh(Request $request): JsonResponse
     {
-        $hocKyId = $request->query('hoc_ky_id');
-        $khoaId = $request->query('khoa_id');
-
-        if (!$hocKyId) {
+        try {
+            $dto = BaoCaoFilterDTO::fromRequest($request->query());
+            $result = $this->getDangKyTheoNganhUseCase->execute($dto);
+            return response()->json($result);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'hoc_ky_id is required'
+                'message' => $e->getMessage()
             ], 400);
-        }
-
-        try {
-            $query = DB::table('dang_ky_hoc_phan')
-                ->join('lop_hoc_phan', 'dang_ky_hoc_phan.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
-                ->join('hoc_phan', 'lop_hoc_phan.hoc_phan_id', '=', 'hoc_phan.id')
-                ->join('sinh_vien', 'dang_ky_hoc_phan.sinh_vien_id', '=', 'sinh_vien.id')
-                ->leftJoin('nganh_hoc', 'sinh_vien.nganh_id', '=', 'nganh_hoc.id')
-                ->where('hoc_phan.id_hoc_ky', $hocKyId);
-
-            if ($khoaId) {
-                $query->where('sinh_vien.khoa_id', $khoaId);
-            }
-
-            $stats = $query
-                ->select(
-                    DB::raw('COALESCE(nganh_hoc.ten_nganh, \'Chưa phân ngành\') as ten_nganh'),
-                    DB::raw('COUNT(dang_ky_hoc_phan.id) as so_dang_ky')
-                )
-                ->groupBy('nganh_hoc.id', 'nganh_hoc.ten_nganh')
-                ->orderByDesc('so_dang_ky')
-                ->get();
-
-            $data = $stats->map(function ($item) {
-                return [
-                    'ten_nganh' => $item->ten_nganh,
-                    'so_dang_ky' => (int) $item->so_dang_ky,
-                ];
-            })->toArray();
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => [
-                    'data' => $data,
-                    'ketLuan' => 'Thống kê số lượng đăng ký theo ngành.',
-                ],
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'isSuccess' => false,
@@ -229,52 +114,17 @@ class BaoCaoController extends Controller
      * 
      * Thống kê số lượng lớp học phần theo giảng viên
      */
-    public function taiGiangVien(Request $request)
+    public function taiGiangVien(Request $request): JsonResponse
     {
-        $hocKyId = $request->query('hoc_ky_id');
-        $khoaId = $request->query('khoa_id');
-
-        if (!$hocKyId) {
+        try {
+            $dto = BaoCaoFilterDTO::fromRequest($request->query());
+            $result = $this->getTaiGiangVienUseCase->execute($dto);
+            return response()->json($result);
+        } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'hoc_ky_id is required'
+                'message' => $e->getMessage()
             ], 400);
-        }
-
-        try {
-            $query = DB::table('lop_hoc_phan')
-                ->join('hoc_phan', 'lop_hoc_phan.hoc_phan_id', '=', 'hoc_phan.id')
-                ->leftJoin('users', 'lop_hoc_phan.giang_vien_id', '=', 'users.id')
-                ->where('hoc_phan.id_hoc_ky', $hocKyId);
-
-            if ($khoaId) {
-                $query->join('giang_vien', 'users.id', '=', 'giang_vien.id')
-                    ->where('giang_vien.khoa_id', $khoaId);
-            }
-
-            $stats = $query
-                ->select(
-                    DB::raw('COALESCE(users.ho_ten, \'Chưa phân công\') as ho_ten'),
-                    DB::raw('COUNT(lop_hoc_phan.id) as so_lop')
-                )
-                ->groupBy('users.id', 'users.ho_ten')
-                ->orderByDesc('so_lop')
-                ->get();
-
-            $data = $stats->map(function ($item) {
-                return [
-                    'ho_ten' => $item->ho_ten,
-                    'so_lop' => (int) $item->so_lop,
-                ];
-            })->toArray();
-
-            return response()->json([
-                'isSuccess' => true,
-                'data' => [
-                    'data' => $data,
-                    'ketLuan' => 'Thống kê số lượng lớp học phần theo giảng viên.',
-                ],
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'isSuccess' => false,

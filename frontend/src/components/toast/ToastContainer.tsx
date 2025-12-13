@@ -81,9 +81,8 @@ const Toast: React.FC<{
 
   return (
     <div
-      className={`toast ${typeClass} ${
-        leaving ? "toast--leave" : "toast--enter"
-      }`}
+      className={`toast ${typeClass} ${leaving ? "toast--leave" : "toast--enter"
+        }`}
     >
       <div className="toast__content">
         <div className="toast__text">
@@ -113,6 +112,7 @@ const ToastContainer: React.FC = () => {
   const { subscribeNotify } = useModalContext();
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
+  // Subscribe to ModalContext notifications
   useEffect(() => {
     const unsub = subscribeNotify((payload) => {
       const newToast: ToastItem = {
@@ -126,6 +126,24 @@ const ToastContainer: React.FC = () => {
     });
     return () => unsub();
   }, [subscribeNotify]);
+
+  // Subscribe to global notificationService (for notifications from outside React)
+  useEffect(() => {
+    // Dynamic import to avoid circular dependency
+    import("../../utils/notificationService").then(({ notificationService }) => {
+      const unsub = notificationService.subscribe((payload) => {
+        const newToast: ToastItem = {
+          id: payload.id ?? genId(),
+          title: payload.title ?? "",
+          message: payload.message,
+          type: payload.type ?? "info",
+          duration: payload.duration ?? 3000,
+        };
+        setToasts((prev) => [newToast, ...prev]);
+      });
+      return () => unsub();
+    });
+  }, []);
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

@@ -29,6 +29,12 @@ export default function ControlPanel({
   const { toggle, loading } = useTogglePhase();
   const { resetData, loading: resetLoading } = useResetDemoData();
 
+  // ✅ row đang active để highlight
+  const [activeKey, setActiveKey] = React.useState<string | null>(null);
+
+  const getPhaseLabel = (key: string) =>
+    statuses.find((s) => s.key === key)?.label ?? key;
+
   // ✅ Toggle phase - gọi API qua hook
   const handleTogglePhase = async (phaseKey: string) => {
     const phaseMapping: Record<string, string> = {
@@ -40,22 +46,31 @@ export default function ControlPanel({
     };
 
     const backendPhase = phaseMapping[phaseKey] || phaseKey;
-
     const result = await toggle(backendPhase);
 
     if (result.isSuccess) {
-      const status = result.data?.isEnabled ? "BẬT" : "TẮT";
-      const statusColor = result.data?.isEnabled ? "success" : "warning";
+      // Nếu backend có trả isEnabled thì ưu tiên dùng để phân biệt bật/tắt
+      const isEnabled = result.data?.isEnabled;
 
+      if (isEnabled === false) {
+        openNotify({
+          message: `Đã tắt phase: ${getPhaseLabel(phaseKey)}`,
+          type: "warning",
+        });
+        return;
+      }
+
+      // Mặc định coi là chuyển phase thành công
+      setActiveKey(phaseKey);
       openNotify({
-        message: `✅ Đã ${status} phase: ${result.data?.phase}`,
-        type: statusColor,
+        message: `Đã chuyển sang phase: ${getPhaseLabel(phaseKey)}`,
+        type: "success",
       });
 
       onSet?.(phaseKey);
     } else {
       openNotify({
-        message: `❌ ${result.message || "Không thể toggle phase"}`,
+        message: `${result.message || "Không thể chuyển phase"}`,
         type: "error",
       });
     }
@@ -83,7 +98,7 @@ export default function ControlPanel({
 
     if (result.isSuccess && result.data) {
       openNotify({
-        message: `✅ Reset thành công ${result.data.totalCleared} bảng dữ liệu!`,
+        message: `Reset thành công ${result.data.totalCleared} bảng dữ liệu!`,
         type: "success",
       });
 
@@ -91,7 +106,7 @@ export default function ControlPanel({
       window.location.reload();
     } else {
       openNotify({
-        message: `❌ ${result.message || "Không thể reset data"}`,
+        message: `${result.message || "Không thể reset data"}`,
         type: "error",
       });
     }
@@ -111,26 +126,32 @@ export default function ControlPanel({
         </div>
 
         {/* Rows */}
-        {statuses.map((st) => (
-          <div className="cp-row" key={st.key}>
-            <div className="cp-cell">
-              <label className="pos__unset cp-label">
-                <span className="cp-dot" aria-hidden />
-                {st.label}
-              </label>
+        {statuses.map((st) => {
+          const isActive = activeKey === st.key;
+          return (
+            <div
+              className={`cp-row ${isActive ? "cp-row--active" : ""}`}
+              key={st.key}
+            >
+              <div className="cp-cell">
+                <label className="pos__unset cp-label">
+                  <span className="cp-dot" aria-hidden />
+                  {st.label}
+                </label>
+              </div>
+              <div className="cp-cell cp-cell--right">
+                <button
+                  type="button"
+                  className="btn__chung h__40__w__100"
+                  onClick={() => handleTogglePhase(st.key)}
+                  disabled={loading}
+                >
+                  {loading ? "..." : "Toggle"}
+                </button>
+              </div>
             </div>
-            <div className="cp-cell cp-cell--right">
-              <button
-                type="button"
-                className="btn__chung h__40__w__100"
-                onClick={() => handleTogglePhase(st.key)}
-                disabled={loading}
-              >
-                {loading ? "..." : "Toggle"}
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Footer - Reset Button dùng ConfirmRoot */}
         <div className="cp-footer" style={{ marginTop: 16 }}>

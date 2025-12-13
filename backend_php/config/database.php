@@ -145,12 +145,18 @@ return [
 
     'redis' => [
 
-        'client' => env('REDIS_CLIENT', 'phpredis'),
+        'client' => env('REDIS_CLIENT', 'predis'),
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
             'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')) . '-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
+            // TLS/SSL configuration for Upstash or other cloud Redis providers
+            'parameters' => [
+                'ssl' => filter_var(env('REDIS_TLS', str_starts_with(env('REDIS_URL', ''), 'rediss://')), FILTER_VALIDATE_BOOLEAN)
+                    ? ['verify_peer' => false, 'verify_peer_name' => false]
+                    : null,
+            ],
         ],
 
         'default' => [

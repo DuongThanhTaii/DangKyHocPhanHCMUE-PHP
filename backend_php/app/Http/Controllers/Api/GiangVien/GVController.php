@@ -52,6 +52,23 @@ class GVController extends Controller
                 ], 404);
             }
 
+            // Check if GiangVien record exists for this user
+            $giangVien = GiangVien::find($userProfile->id);
+
+            // DEBUG: Get all unique giang_vien_ids from lop_hoc_phan
+            $allGvIds = LopHocPhan::whereNotNull('giang_vien_id')
+                ->distinct()
+                ->pluck('giang_vien_id')
+                ->toArray();
+
+            // DEBUG: Log the query info
+            \Log::info("[GVController] getLopHocPhanList DEBUG:", [
+                'tai_khoan_id' => $taiKhoan->id,
+                'user_profile_id' => $userProfile->id,
+                'giang_vien_exists' => $giangVien ? true : false,
+                'all_gv_ids_in_lop_hoc_phan' => $allGvIds,
+            ]);
+
             // Get LopHocPhan where giang_vien_id = user profile id
             $query = LopHocPhan::with(['hocPhan.monHoc'])
                 ->where('giang_vien_id', $userProfile->id);
@@ -63,6 +80,10 @@ class GVController extends Controller
             }
 
             $lopHocPhans = $query->get();
+
+            // DEBUG: Also check how many classes have this giang_vien_id in general
+            $totalWithGvId = LopHocPhan::where('giang_vien_id', $userProfile->id)->count();
+            $totalClasses = LopHocPhan::count();
 
             $data = $lopHocPhans->map(function ($lhp) {
                 $hocPhan = $lhp->hocPhan;
@@ -87,7 +108,16 @@ class GVController extends Controller
             return response()->json([
                 'isSuccess' => true,
                 'data' => $data,
-                'message' => "Lấy thành công {$data->count()} lớp học phần"
+                'message' => "Lấy thành công {$data->count()} lớp học phần",
+                // DEBUG info (remove in production)
+                'debug' => [
+                    'your_user_profile_id' => $userProfile->id,
+                    'giang_vien_record_exists' => $giangVien ? true : false,
+                    'total_classes_in_db' => $totalClasses,
+                    'classes_with_your_id' => $totalWithGvId,
+                    'all_giang_vien_ids_in_lop_hoc_phan' => $allGvIds,
+                    'hint' => 'If giang_vien_id in lop_hoc_phan does not match your user_profile_id, we need to fix the query logic',
+                ]
             ]);
 
         } catch (\Throwable $e) {

@@ -26,12 +26,28 @@ export default function GVLopHocPhanDetail() {
     getDocumentUrl,
   } = useGVLopHocPhanDetail(id!);
 
+  // Helper to get nested properties from API response (camelCase)
+  const getMonHocInfo = () => {
+    if (!info) return { maMon: "", tenMon: "", maLop: "" };
+
+    // API returns camelCase: hocPhan, monHoc, maLop, etc.
+    const hocPhan = (info as any).hocPhan || info.hoc_phan;
+    const monHoc = hocPhan?.monHoc || hocPhan?.mon_hoc;
+    const maLop = (info as any).maLop || info.ma_lop || "";
+    const maMon = monHoc?.maMon || monHoc?.ma_mon || "";
+    const tenMon = monHoc?.tenMon || monHoc?.ten_mon || "";
+
+    return { maMon, tenMon, maLop };
+  };
+
+  const monHocInfo = getMonHocInfo();
+
   return (
     <section className="main__body">
       <div className="body__title">
         <p className="body__title-text">
           {info
-            ? `QUẢN LÝ LỚP ${info.ma_lop} — ${info.hoc_phan.mon_hoc.ma_mon} ${info.hoc_phan.mon_hoc.ten_mon}`
+            ? `QUẢN LÝ LỚP ${monHocInfo.maLop} — ${monHocInfo.tenMon}`
             : "QUẢN LÝ LỚP HỌC PHẦN"}
         </p>
       </div>
@@ -62,27 +78,24 @@ export default function GVLopHocPhanDetail() {
               </button>
 
               <button
-                className={`btn__update h__40 w__100 mr_20 tab-btn ${
-                  tab === "docs" ? "active" : ""
-                }`}
+                className={`btn__update h__40 w__100 mr_20 tab-btn ${tab === "docs" ? "active" : ""
+                  }`}
                 onClick={() => setTab("docs")}
               >
                 Tài liệu
               </button>
 
               <button
-                className={`btn__update h__40 w__100 mr_20 tab-btn ${
-                  tab === "sv" ? "active" : ""
-                }`}
+                className={`btn__update h__40 w__100 mr_20 tab-btn ${tab === "sv" ? "active" : ""
+                  }`}
                 onClick={() => setTab("sv")}
               >
                 Sinh viên
               </button>
 
               <button
-                className={`btn__update h__40 w__100 mr_20 tab-btn ${
-                  tab === "grades" ? "active" : ""
-                }`}
+                className={`btn__update h__40 w__100 mr_20 tab-btn ${tab === "grades" ? "active" : ""
+                  }`}
                 onClick={() => setTab("grades")}
               >
                 Điểm
@@ -122,8 +135,8 @@ export default function GVLopHocPhanDetail() {
                   </thead>
                   <tbody>
                     {students.map((s) => (
-                      <tr key={s.mssv}>
-                        <td>{s.mssv}</td>
+                      <tr key={s.maSoSinhVien}>
+                        <td>{s.maSoSinhVien}</td>
                         <td>{s.hoTen}</td>
                         <td>{s.lop || ""}</td>
                         <td>{s.email}</td>
@@ -160,7 +173,7 @@ export default function GVLopHocPhanDetail() {
                       {students.map((s) => (
                         <tr key={s.id}>
                           {/* Use UUID as key */}
-                          <td>{s.mssv}</td>
+                          <td>{s.maSoSinhVien}</td>
                           <td>{s.hoTen}</td>
                           <td style={{ maxWidth: 120 }}>
                             <input

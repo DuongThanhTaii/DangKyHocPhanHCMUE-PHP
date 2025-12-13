@@ -15,6 +15,7 @@ use App\Infrastructure\SinhVien\Persistence\Models\HocPhan;
 use App\Infrastructure\SinhVien\Persistence\Models\TaiLieu;
 use App\Infrastructure\Common\Persistence\Models\HocKy;
 use App\Infrastructure\Auth\Persistence\Models\UserProfile;
+use App\Infrastructure\Redis\Services\RedisLockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -22,6 +23,16 @@ use Illuminate\Support\Str;
 
 class DangKyHocPhanController extends Controller
 {
+    /**
+     * Redis Lock Service for preventing race conditions
+     */
+    private RedisLockService $lockService;
+
+    public function __construct(RedisLockService $lockService)
+    {
+        $this->lockService = $lockService;
+    }
+
     /**
      * Help method to get SinhVien from JWT token
      */
@@ -316,6 +327,9 @@ class DangKyHocPhanController extends Controller
      * POST /api/sv/dang-ky-hoc-phan
      * Register for a course class
      * Body: { "lopHocPhanId": "uuid", "hocKyId": "uuid" }
+     *
+     * Uses Redis distributed lock to prevent race conditions when
+     * multiple students try to register for the same class simultaneously.
      */
     public function dangKyHocPhan(Request $request)
     {
@@ -340,7 +354,7 @@ class DangKyHocPhanController extends Controller
                 ], 404);
             }
 
-            // 1. Check Phase
+            // 1. Check Phase (outside lock - read-only)
             $now = now();
             $currentPhase = KyPhase::where('hoc_ky_id', $hocKyId)
                 ->where('is_enabled', true)
@@ -356,7 +370,7 @@ class DangKyHocPhanController extends Controller
                 ], 400);
             }
 
-            // 2. Get Class Info
+            // 2. Get Class Info (outside lock - read-only)
             $lhp = LopHocPhan::with(['hocPhan.monHoc', 'lichHocDinhKys'])->find($lopHocPhanId);
             if (!$lhp) {
                 return response()->json([
@@ -366,19 +380,7 @@ class DangKyHocPhanController extends Controller
                 ], 404);
             }
 
-            // 3. Check Max Quantity
-            $currentCount = $lhp->so_luong_hien_tai ?? 0;
-            $maxCount = $lhp->so_luong_toi_da ?? 50;
-
-            if ($currentCount >= $maxCount) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Lớp học phần đã đầy'
-                ], 400);
-            }
-
-            // 4. Check if already registered for this subject
+            // 3. Check if already registered for this subject (outside lock - student-specific)
             $monHocId = $lhp->hocPhan?->mon_hoc_id;
             if ($monHocId) {
                 $hasRegistered = DangKyHocPhan::where('sinh_vien_id', $sinhVien->id)
@@ -397,7 +399,7 @@ class DangKyHocPhanController extends Controller
                 }
             }
 
-            // 5. Check Time Conflict
+            // 4. Check Time Conflict (outside lock - student-specific)
             $newSchedules = $lhp->lichHocDinhKys;
 
             $existingRegistrations = DangKyHocPhan::with('lopHocPhan.lichHocDinhKys')
@@ -419,55 +421,97 @@ class DangKyHocPhanController extends Controller
                 }
             }
 
-            // 6. Perform Registration
-            DB::transaction(function () use ($sinhVien, $lopHocPhanId, $hocKyId, $lhp) {
-                // Create DangKyHocPhan
-                $dangKy = DangKyHocPhan::create([
-                    'id' => Str::uuid()->toString(),
-                    'sinh_vien_id' => $sinhVien->id,
-                    'lop_hoc_phan_id' => $lopHocPhanId,
-                    'ngay_dang_ky' => now(),
-                    'trang_thai' => 'da_dang_ky',
-                ]);
+            // ============================================================
+            // 5. CRITICAL SECTION - Use Redis Lock to prevent race condition
+            // ============================================================
+            // Lock key is unique per class to allow parallel registration to different classes
+            $lockKey = "dkhp:lop:{$lopHocPhanId}";
 
-                // Create DangKyTkb
-                DangKyTkb::create([
-                    'id' => Str::uuid()->toString(),
-                    'dang_ky_id' => $dangKy->id,
-                    'sinh_vien_id' => $sinhVien->id,
-                    'lop_hoc_phan_id' => $lopHocPhanId,
-                ]);
+            return $this->lockService->withLock($lockKey, function () use ($sinhVien, $lopHocPhanId, $hocKyId, $lhp) {
+                // Re-fetch class to get latest slot count (fresh from DB)
+                $lhp = LopHocPhan::find($lopHocPhanId);
+                $currentCount = $lhp->so_luong_hien_tai ?? 0;
+                $maxCount = $lhp->so_luong_toi_da ?? 50;
 
-                // Update Quantity
-                $lhp->increment('so_luong_hien_tai');
+                // Check slot availability (inside lock - atomic!)
+                if ($currentCount >= $maxCount) {
+                    return response()->json([
+                        'isSuccess' => false,
+                        'data' => null,
+                        'message' => 'Lớp học phần đã đầy'
+                    ], 400);
+                }
 
-                // Log History - First find or create the LichSuDangKy header record
-                $lichSu = LichSuDangKy::firstOrCreate(
-                    [
-                        'sinh_vien_id' => $sinhVien->id,
-                        'hoc_ky_id' => $hocKyId,
-                    ],
-                    [
+                // Double-check if student hasn't registered while waiting for lock
+                $alreadyRegistered = DangKyHocPhan::where('sinh_vien_id', $sinhVien->id)
+                    ->where('lop_hoc_phan_id', $lopHocPhanId)
+                    ->exists();
+
+                if ($alreadyRegistered) {
+                    return response()->json([
+                        'isSuccess' => false,
+                        'data' => null,
+                        'message' => 'Bạn đã đăng ký lớp học phần này rồi'
+                    ], 400);
+                }
+
+                // 6. Perform Registration (inside lock - safe now!)
+                DB::transaction(function () use ($sinhVien, $lopHocPhanId, $hocKyId, $lhp) {
+                    // Create DangKyHocPhan
+                    $dangKy = DangKyHocPhan::create([
                         'id' => Str::uuid()->toString(),
-                        'ngay_tao' => now(),
-                    ]
-                );
+                        'sinh_vien_id' => $sinhVien->id,
+                        'lop_hoc_phan_id' => $lopHocPhanId,
+                        'ngay_dang_ky' => now(),
+                        'trang_thai' => 'da_dang_ky',
+                    ]);
 
-                // Then create the ChiTietLichSuDangKy record for this action
-                ChiTietLichSuDangKy::create([
-                    'id' => Str::uuid()->toString(),
-                    'lich_su_dang_ky_id' => $lichSu->id,
-                    'dang_ky_hoc_phan_id' => $dangKy->id,
-                    'hanh_dong' => 'dang_ky',
-                    'thoi_gian' => now(),
+                    // Create DangKyTkb
+                    DangKyTkb::create([
+                        'id' => Str::uuid()->toString(),
+                        'dang_ky_id' => $dangKy->id,
+                        'sinh_vien_id' => $sinhVien->id,
+                        'lop_hoc_phan_id' => $lopHocPhanId,
+                    ]);
+
+                    // Update Quantity
+                    $lhp->increment('so_luong_hien_tai');
+
+                    // Log History
+                    $lichSu = LichSuDangKy::firstOrCreate(
+                        [
+                            'sinh_vien_id' => $sinhVien->id,
+                            'hoc_ky_id' => $hocKyId,
+                        ],
+                        [
+                            'id' => Str::uuid()->toString(),
+                            'ngay_tao' => now(),
+                        ]
+                    );
+
+                    ChiTietLichSuDangKy::create([
+                        'id' => Str::uuid()->toString(),
+                        'lich_su_dang_ky_id' => $lichSu->id,
+                        'dang_ky_hoc_phan_id' => $dangKy->id,
+                        'hanh_dong' => 'dang_ky',
+                        'thoi_gian' => now(),
+                    ]);
+                });
+
+                return response()->json([
+                    'isSuccess' => true,
+                    'data' => null,
+                    'message' => 'Đăng ký học phần thành công'
                 ]);
             });
 
+        } catch (\RuntimeException $e) {
+            // Lock acquisition timeout
             return response()->json([
-                'isSuccess' => true,
+                'isSuccess' => false,
                 'data' => null,
-                'message' => 'Đăng ký học phần thành công'
-            ]);
+                'message' => $e->getMessage()
+            ], 503); // Service Unavailable
 
         } catch (\Throwable $e) {
             return response()->json([

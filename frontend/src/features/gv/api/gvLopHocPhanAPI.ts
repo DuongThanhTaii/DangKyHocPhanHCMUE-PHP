@@ -32,7 +32,7 @@ export interface GVLopHocPhanDetailDTO {
 
 export interface GVStudentDTO {
     id: string;
-    mssv: string;
+    maSoSinhVien: string;
     hoTen: string;
     lop: string | null;
     email: string;

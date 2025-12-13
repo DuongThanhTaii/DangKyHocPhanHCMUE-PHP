@@ -19,6 +19,8 @@ services:
     restart: unless-stopped
     networks:
       - dkhp-network
+    depends_on:
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
       interval: 30s
@@ -42,6 +44,24 @@ services:
     networks:
       - dkhp-network
 
+  # Redis service for caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: dkhp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - dkhp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   dkhp-network:
     driver: bridge
@@ -49,3 +69,4 @@ networks:
 volumes:
   backend-static:
   backend-media:
+  redis-data:

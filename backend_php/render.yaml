@@ -1,0 +1,65 @@
+# Render Blueprint Specification
+# https://render.com/docs/blueprint-spec
+
+services:
+  # PHP Laravel Backend API
+  - type: web
+    name: dkhp-php-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Use free tier
+    plan: free
+    # Health check endpoint
+    healthCheckPath: /health
+    # Auto-deploy on push
+    autoDeploy: true
+    # Environment variables
+    envVars:
+      # Application settings
+      - key: APP_NAME
+        value: DKHP_Backend
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_URL
+        fromService:
+          type: web
+          name: dkhp-php-backend
+          property: url
+      
+      # Database - Set your production database URL
+      # For PostgreSQL on Render or external providers like Neon, Supabase
+      - key: DATABASE_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      
+      # Session & Cache
+      - key: SESSION_DRIVER
+        value: cookie
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      
+      # Redis (optional - for caching, uncomment if you have Redis)
+      # - key: REDIS_URL
+      #   sync: false
+      
+      # JWT Secret
+      - key: JWT_SECRET
+        generateValue: true
+      
+      # Logging
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+
+      # CORS - Set your frontend URL
+      - key: FRONTEND_URL
+        sync: false

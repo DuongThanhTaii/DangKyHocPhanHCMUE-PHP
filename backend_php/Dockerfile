@@ -1,30 +1,45 @@
-# === Stage 1: Build Stage ===
+# =========================
+# Stage 1: Build (Composer)
+# =========================
 FROM php:8.3-cli-alpine AS composer-builder
 WORKDIR /app
+
+# Composer binary
 COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 
+# Extensions needed for composer deps (gd/zip/intl for phpspreadsheet, etc.)
 RUN apk add --no-cache \
     freetype-dev libjpeg-turbo-dev libpng-dev \
     icu-dev zlib-dev libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd intl zip
+  && docker-php-ext-configure gd --with-freetype --with-jpeg \
+  && docker-php-ext-install -j$(nproc) gd intl zip
 
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+# Copy composer files first for caching
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
 
+# IMPORTANT: no scripts here because artisan not copied yet
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --no-scripts
+
+# Copy app source
 COPY . .
+
+# Optimized autoloader (still no scripts; we run artisan in entrypoint)
 RUN composer dump-autoload --optimize --no-dev
 
 
+# =========================
+# Stage 2: Production
+# =========================
+FROM php:8.3-fpm-alpine
 
-# === Stage 2: Production Stage ===
-FROM php:8.2-fpm-alpine
-
-# Install system dependencies
+# System deps (gettext => envsubst)
 RUN apk add --no-cache \
     nginx \
     supervisor \
     curl \
+    gettext \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
@@ -34,11 +49,11 @@ RUN apk add --no-cache \
     icu-dev \
     oniguruma-dev \
     postgresql-dev \
-    && rm -rf /var/cache/apk/*
+  && rm -rf /var/cache/apk/*
 
-# Install PHP extensions
+# PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) \
+  && docker-php-ext-install -j$(nproc) \
     pdo \
     pdo_mysql \
     pdo_pgsql \
@@ -52,44 +67,37 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     intl \
     opcache
 
-# Install Redis extension
+# Redis extension
 RUN apk add --no-cache --virtual .build-deps autoconf g++ make \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
-    && apk del .build-deps
+  && pecl install redis \
+  && docker-php-ext-enable redis \
+  && apk del .build-deps
 
-# Configure PHP for production
+# Configs
 COPY docker/php.ini /usr/local/etc/php/conf.d/custom.ini
-
-# Configure Nginx
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-
-# Configure Supervisor
+# Use template so we can inject $PORT at runtime via envsubst
+COPY docker/nginx.conf.template /etc/nginx/nginx.conf.template
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Set working directory
+# App
 WORKDIR /var/www/html
-
-# Copy application from builder stage
 COPY --from=composer-builder /app .
 
-# Copy entrypoint script
+# Entrypoint
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Create necessary directories and set permissions
-RUN mkdir -p storage/framework/{sessions,views,cache} \
-    && mkdir -p storage/logs \
-    && mkdir -p bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 storage bootstrap/cache
+# Permissions & dirs
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache \
+  && mkdir -p storage/logs bootstrap/cache \
+  && chown -R www-data:www-data /var/www/html \
+  && chmod -R 775 storage bootstrap/cache
 
-# Expose port (Render uses PORT env variable)
+# Render port (default fallback in entrypoint)
 EXPOSE 10000
 
-# Health check
+# Health check (uses $PORT with fallback)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:10000/health || exit 1
+  CMD sh -c "curl -fsS http://localhost:${PORT:-10000}/health || exit 1"
 
-# Start with entrypoint
 ENTRYPOINT ["/entrypoint.sh"]

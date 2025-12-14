@@ -1,13 +1,27 @@
 # === Stage 1: Build Stage ===
-FROM composer:2.7 AS composer-builder
+# Use PHP 8.2 to match composer.json requirements
+FROM php:8.2-cli-alpine AS composer-builder
+
+# Install composer
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
+
+# Install required extensions for composer dependencies
+RUN apk add --no-cache \
+    libpng-dev \
+    libjpeg-turbo-dev \
+    freetype-dev \
+    libzip-dev \
+    icu-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install gd zip intl
 
 WORKDIR /app
 
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
-# Install dependencies (no dev dependencies for production)
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+# Install dependencies (ignore platform reqs for extensions installed later)
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignore-platform-reqs
 
 # Copy the rest of the application
 COPY . .

@@ -1,13 +1,6 @@
 import type { FormEvent } from "react";
 import type { HocKyNienKhoaDTO } from "../../../features/common/types";
 
-type CurrentSemester = {
-  ten_hoc_ky?: string | null;
-  ten_nien_khoa?: string | null;
-  ngay_bat_dau?: string | null;
-  ngay_ket_thuc?: string | null;
-};
-
 type HocKyNienKhoaShowSetupProps = {
   hocKyNienKhoas: HocKyNienKhoaDTO[];
   loadingHocKy: boolean;
@@ -18,9 +11,6 @@ type HocKyNienKhoaShowSetupProps = {
   /** ✅ Để optional: nếu không truyền thì sẽ không render ô ngày + nút Set */
   semesterStart?: string;
   semesterEnd?: string;
-
-  currentSemester: CurrentSemester;
-  semesterMessage?: string;
 
   onChangeNienKhoa: (value: string) => void;
   onChangeHocKy: (value: string) => void;
@@ -40,8 +30,6 @@ export function HocKyNienKhoaShowSetup({
   selectedHocKy,
   semesterStart,
   semesterEnd,
-  currentSemester,
-  semesterMessage,
   onChangeNienKhoa,
   onChangeHocKy,
   onChangeStart,
@@ -151,18 +139,6 @@ export function HocKyNienKhoaShowSetup({
             )}
           </button>
         </>
-      )}
-
-      {/* Message */}
-      {semesterMessage && (
-        <p
-          style={{
-            color: semesterMessage.includes("✅") ? "green" : "red",
-            marginTop: 8,
-          }}
-        >
-          {semesterMessage}
-        </p>
       )}
     </form>
   );

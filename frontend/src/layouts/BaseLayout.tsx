@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom"; // ✅ Bỏ Navigate
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState, type PropsWithChildren } from "react";
 import "../styles/reset.css";
 import "../styles/menu.css";
@@ -12,6 +12,9 @@ import type { LayoutConfig } from "./types";
 
 // ✅ THÊM: import modal đổi mật khẩu (đã tách CSS trong file của modal)
 import ModalChangePassword from "../components/changepassword/ModalChangePassword";
+
+// ✅ THÊM: import PageLoader cho hiệu ứng loading
+import { PageLoader } from "../components/loader";
 
 function formatRole(role?: string) {
   const roleMap: Record<string, string> = {
@@ -37,6 +40,19 @@ export default function BaseLayout({ config, children }: BaseLayoutProps) {
   const [showSetting, setShowSetting] = useState(false);
   // ✅ THÊM: state mở/đóng modal đổi mật khẩu
   const [showChangePass, setShowChangePass] = useState(false);
+
+  // ✅ THÊM: state cho page loading khi có API call
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ✅ Subscribe to loadingService - hiển thị spinner khi có API đang chạy
+  useEffect(() => {
+    import("../utils/loadingService").then(({ loadingService }) => {
+      const unsubscribe = loadingService.subscribe((loading) => {
+        setIsLoading(loading);
+      });
+      return () => unsubscribe();
+    });
+  }, []);
 
   useEffect(() => {
     setSidebarOpen(false);
@@ -145,6 +161,9 @@ export default function BaseLayout({ config, children }: BaseLayoutProps) {
 
   return (
     <div className="layout">
+      {/* ✅ THÊM: Hiển thị loader khi chuyển trang */}
+      {isLoading && <PageLoader text="Đang xử lý" />}
+
       <aside
         id="app-sidebar"
         className={`layout__sidebar ${sidebarOpen ? "is-open" : ""}`}

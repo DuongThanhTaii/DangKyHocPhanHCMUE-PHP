@@ -21,14 +21,20 @@ export default defineConfig({
 
   // Build optimization for production
   build: {
-    // Chunk splitting strategy
+    // Chunk splitting strategy - ✅ OPTIMIZED
     rollupOptions: {
       output: {
         manualChunks: {
-          // Group vendor libraries together
+          // Core React ecosystem
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
-          'vendor-utils': ['axios'],
+          // State management
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux', 'redux-persist'],
+          // HTTP utilities
+          'vendor-utils': ['axios', 'fuse.js'],
+          // Charts - large library, separate chunk
+          'vendor-charts': ['recharts'],
+          // Drag and drop - only load when needed
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
         },
       },
     },
@@ -36,6 +42,12 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     // Enable source maps for debugging (disable in production for smaller builds)
     sourcemap: false,
+    // ✅ Enable CSS code splitting - each page loads only needed CSS
+    cssCodeSplit: true,
+    // ✅ Minify options for better compression
+    minify: 'esbuild',
+    // ✅ Target modern browsers for smaller bundle
+    target: 'es2020',
   },
 
   server: {

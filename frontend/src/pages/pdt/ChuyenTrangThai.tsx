@@ -398,9 +398,8 @@ export default function ChuyenTrangThai() {
     // TODO: Call API to update phase time
 
     openNotify({
-      message: `API chỉnh thời gian ${
-        phaseType === "ghi_danh" ? "Ghi Danh" : "Đăng Ký"
-      } đang được phát triển`,
+      message: `API chỉnh thời gian ${phaseType === "ghi_danh" ? "Ghi Danh" : "Đăng Ký"
+        } đang được phát triển`,
       type: "info",
     });
 
@@ -435,14 +434,26 @@ export default function ChuyenTrangThai() {
           selectedHocKy={selectedHocKyId || ""}
           semesterStart={semesterStart}
           semesterEnd={semesterEnd}
-          currentSemester={currentSemester}
-          semesterMessage={semesterMessage}
           onChangeNienKhoa={handleChangeNienKhoa}
           onChangeHocKy={handleChangeHocKy}
           onChangeStart={setSemesterStart}
           onChangeEnd={setSemesterEnd}
           onSubmit={handleSubmitSemester}
         />
+
+        {/* ✅ Hiển thị semesterMessage bên dưới form */}
+        {semesterMessage && (
+          <p
+            style={{
+              color: semesterMessage.includes("✅") ? "green" : "red",
+              marginTop: 25,
+              paddingLeft: 4,
+              fontWeight: 500,
+            }}
+          >
+            {semesterMessage}
+          </p>
+        )}
 
         {/* ✅ Component phases (UI không đổi) */}
         <PhaseHocKyNienKhoaSetup

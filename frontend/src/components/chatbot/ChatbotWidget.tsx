@@ -235,8 +235,8 @@ function renderBotPayload(
   if (t === "natural_answer" || t === "answer") {
     const text = String(
       (payload as any).answer ??
-        (payload as any).text ??
-        "(Không có nội dung trả lời)"
+      (payload as any).text ??
+      "(Không có nội dung trả lời)"
     );
     return tools(
       <div className="cbt-bubble">
@@ -351,7 +351,7 @@ export default function ChatbotWidget() {
             H - FAB_SIZE - EDGE_PAD
           ),
         };
-      } catch {}
+      } catch { }
     }
     return { x: W - FAB_SIZE - 20, y: H - FAB_SIZE - 20 };
   });
@@ -455,8 +455,7 @@ export default function ChatbotWidget() {
     setDomain(k);
     setModePicked(true);
     resetChat(
-      `Bạn đang ở chức năng: ${
-        CHOICES.find((c) => c.key === k)?.title ?? k.toUpperCase()
+      `Bạn đang ở chức năng: ${CHOICES.find((c) => c.key === k)?.title ?? k.toUpperCase()
       }.`
     );
   };
@@ -560,7 +559,7 @@ export default function ChatbotWidget() {
       {/* FAB */}
       <button
         aria-label="Open Chatbot"
-        className="cbt-fab"
+        className={`cbt-fab ${open ? "is-open" : ""}`}
         style={{ left: fabPos.x, top: fabPos.y }}
         onPointerDown={onFabPointerDown}
         onPointerMove={onFabPointerMove}
@@ -568,7 +567,7 @@ export default function ChatbotWidget() {
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
           <path
-            fill="#ffffff"
+            fill="currentColor"
             d="M384 144c0 97.2-86 176-192 176-26.7 0-52.1-5-75.2-14L35.2 349.2c-9.3 4.9-20.7 3.2-28.2-4.2s-9.2-18.9-4.2-28.2l35.6-67.2C14.3 220.2 0 183.6 0 144 0 46.8 86-32 192-32S384 46.8 384 144zm0 368c-94.1 0-172.4-62.1-188.8-144 120-1.5 224.3-86.9 235.8-202.7 83.3 19.2 145 88.3 145 170.7 0 39.6-14.3 76.2-38.4 105.6l35.6 67.2c4.9 9.3 3.2 20.7-4.2 28.2s-18.9 9.2-28.2 4.2L459.2 498c-23.1 9-48.5 14-75.2 14z"
           />
         </svg>
@@ -582,6 +581,8 @@ export default function ChatbotWidget() {
         >
           <div className="cbt-header">
             <div className="cbt-header-main">
+              {/* Nút “Chọn lại” nhỏ bên phải */}
+              
               <div className="cbt-header-title">
                 <div className="cbt-header-app">TRỢ LÝ HCMUE</div>
               </div>
@@ -645,14 +646,32 @@ export default function ChatbotWidget() {
           <div className="cbt-header">
             {/* Hàng trên: tiêu đề + nút Đóng */}
             <div className="cbt-header-main">
+              <button
+                className="cbt-back"
+                onClick={() => {
+                  setModePicked(false);
+                  setInput("");
+                  setMessages([
+                    {
+                      id: uid(),
+                      role: "system",
+                      payload: {
+                        text: "Xin chào 👋\nBạn có thể chọn 1 chức năng hoặc hỏi nhanh cho Trợ lý tổng hợp bên dưới.",
+                      },
+                    },
+                  ]);
+                }}
+              >
+                ←
+              </button>
+
               <div className="cbt-header-title">
                 <div className="cbt-header-app">Trợ lý HCMUE</div>
                 <div className="cbt-header-mode">
                   {domain === "auto"
                     ? "Chế độ: Trợ lý tổng hợp"
-                    : `Chế độ: ${
-                        CHOICES.find((c) => c.key === domain)?.title ?? "Khác"
-                      }`}
+                    : `Chế độ: ${CHOICES.find((c) => c.key === domain)?.title ?? "Khác"
+                    }`}
                 </div>
               </div>
 
@@ -703,25 +722,7 @@ export default function ChatbotWidget() {
               </button>
             ))}
 
-            {/* Nút “Chọn lại” nhỏ bên phải */}
-            <button
-              className="cbt-minibtn cbt-modebtn cbt-modebtn--ghost"
-              onClick={() => {
-                setModePicked(false);
-                setInput("");
-                setMessages([
-                  {
-                    id: uid(),
-                    role: "system",
-                    payload: {
-                      text: "Xin chào 👋\nBạn có thể chọn 1 chức năng hoặc hỏi nhanh cho Trợ lý tổng hợp bên dưới.",
-                    },
-                  },
-                ]);
-              }}
-            >
-              ← Chọn lại
-            </button>
+
           </div>
 
           <div className="cbt-body">

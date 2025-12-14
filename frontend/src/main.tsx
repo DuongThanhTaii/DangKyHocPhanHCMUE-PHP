@@ -16,10 +16,14 @@ import "./components/confirm/confirm.css";
 import ChatbotWidget from "./components/chatbot/ChatbotWidget";
 import "./components/chatbot/chatbot.css";
 
+// ✅ Import PageLoader cho PersistGate loading
+import PageLoader from "./components/loader/PageLoader";
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Provider store={store}>
-      <PersistGate loading={<div>Loading...</div>} persistor={persistor}>
+      {/* ✅ Sử dụng PageLoader thay vì text đơn giản */}
+      <PersistGate loading={<PageLoader text="Đang khởi động" />} persistor={persistor}>
         <SidebarProvider>
           <ModalProvider>
             <RouterProvider router={router} />

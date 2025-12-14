@@ -2,14 +2,18 @@ import axios from "axios";
 import { store } from "../app/store";
 import { logout } from "../features/auth/authSlice";
 import { notificationService } from "./notificationService";
+import { loadingService } from "./loadingService";
 
 const api = axios.create({
   // Use /api to go through Vite proxy (Dev) or Nginx proxy (Prod)
   baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
-// Request interceptor - attach token
+// Request interceptor - attach token + start loading
 api.interceptors.request.use((config) => {
+  // Start loading for every API call
+  loadingService.startLoading();
+
   const state = store.getState();
   const token = state.auth.token;
   if (token && !config.url?.includes('login')) {
@@ -18,10 +22,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor - auto logout on 401 (token expired)
+// Response interceptor - stop loading + auto logout on 401
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    loadingService.stopLoading();
+    return response;
+  },
   (error) => {
+    loadingService.stopLoading();
+
     if (error.response?.status === 401) {
       const state = store.getState();
       // Only logout if user was logged in (has token)
@@ -43,4 +52,5 @@ api.interceptors.response.use(
 );
 
 export default api;
+
 

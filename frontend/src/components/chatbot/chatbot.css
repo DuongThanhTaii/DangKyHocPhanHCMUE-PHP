@@ -274,6 +274,7 @@
       rgba(12, 72, 116, 0.08),
       rgba(12, 72, 116, 0.02));
   display: flex;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 6px;
 }

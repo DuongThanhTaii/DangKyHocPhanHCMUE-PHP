@@ -3,17 +3,25 @@ FROM composer:2.7 AS composer-builder
 
 WORKDIR /app
 
+# ✅ Cài các lib cần để build PHP extensions + enable ext-gd/zip/intl cho composer install
+RUN apk add --no-cache \
+    freetype-dev libjpeg-turbo-dev libpng-dev \
+    icu-dev zlib-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd intl zip
+
 # Copy composer files first for better caching
 COPY composer.json composer.lock ./
 
 # Install dependencies (no dev dependencies for production)
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction --no-progress
 
 # Copy the rest of the application
 COPY . .
 
 # Generate optimized autoloader
 RUN composer dump-autoload --optimize --no-dev
+
 
 # === Stage 2: Production Stage ===
 FROM php:8.2-fpm-alpine

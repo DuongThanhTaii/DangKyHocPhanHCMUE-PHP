@@ -18,11 +18,17 @@ if [ -z "$APP_KEY" ]; then
   exit 1
 fi
 
-echo "Clearing caches..."
+echo "Clearing local caches..."
 php artisan config:clear || true
-php artisan cache:clear  || true
 php artisan view:clear   || true
 php artisan route:clear  || true
+
+# ⚠️ Redis (Upstash) không nên flush cache khi startup (cache:clear => FLUSHDB)
+if [ "${CACHE_STORE}" = "redis" ] || [ "${CACHE_DRIVER}" = "redis" ]; then
+  echo "Skipping cache:clear because cache store is redis (avoid FLUSHDB on Upstash)"
+else
+  php artisan cache:clear || true
+fi
 
 echo "Optimizing application..."
 php artisan config:cache || true

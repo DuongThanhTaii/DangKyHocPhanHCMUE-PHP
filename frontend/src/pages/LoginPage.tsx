@@ -232,7 +232,7 @@ function LoginPage() {
 
         <div className="copyright">
           <p className="copyright__text">
-            © 2025 CNPM | Developed by Anh Trai Say Ges{" "}
+            © 2025 PHP | Developed by Anh Trai Say Ges{" "}
             <a
               href="https://psctelecom.com.vn/"
               target="_blank"

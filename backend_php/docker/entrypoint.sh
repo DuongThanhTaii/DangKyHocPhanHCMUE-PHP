@@ -7,27 +7,34 @@ cd /var/www/html
 # Render PORT fallback
 export PORT="${PORT:-10000}"
 
-# Render nginx.conf từ template
+# Render nginx.conf từ template (nếu có)
 if [ -f /etc/nginx/nginx.conf.template ]; then
   envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 fi
 
-# Bắt buộc APP_KEY
+# Bắt buộc APP_KEY (production)
 if [ -z "$APP_KEY" ]; then
   echo "ERROR: APP_KEY is not set. Set APP_KEY in Render env vars."
   exit 1
 fi
 
+echo "Clearing caches..."
+php artisan config:clear || true
+php artisan cache:clear  || true
+php artisan view:clear   || true
+php artisan route:clear  || true
+
 echo "Optimizing application..."
-php artisan config:cache
+php artisan config:cache || true
+php artisan route:cache  || echo "route:cache skipped (maybe closures)"
+php artisan view:cache   || echo "view:cache skipped"
 
-# route:cache hay fail nếu có Closure routes => đừng làm chết container
-php artisan route:cache || echo "route:cache skipped (maybe closures)"
-php artisan view:cache  || echo "view:cache skipped"
-
-if [ -n "$DATABASE_URL" ] || [ -n "$DB_CONNECTION" ]; then
-  echo "Running database migrations..."
-  php artisan migrate --force || echo "Migration failed or no pending migrations"
+# ✅ DB dùng chung, chỉ read/write schema có sẵn => KHÔNG chạy migrate tự động
+if [ "${RUN_MIGRATIONS}" = "true" ]; then
+  echo "Running database migrations (RUN_MIGRATIONS=true)..."
+  php artisan migrate --force
+else
+  echo "Skipping migrations (read/write existing schema)"
 fi
 
 php artisan storage:link 2>/dev/null || true

@@ -1,0 +1,38 @@
+services:
+  # Backend PHP (Laravel) Production
+  backend-php:
+    build:
+      context: ./backend_php
+      dockerfile: Dockerfile
+    container_name: dkhp-backend-prod
+    restart: always
+    # Map VPS port 80 to container port 10000
+    ports:
+      - "80:10000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_KEY=${APP_KEY}
+      - DB_CONNECTION=pgsql
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - CACHE_STORE=redis
+      - REDIS_HOST=redis
+      - PORT=10000
+    depends_on:
+      - redis
+
+  # Redis for Caching/Queues
+  redis:
+    image: redis:7-alpine
+    container_name: dkhp-redis-prod
+    restart: always
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  redis-data:

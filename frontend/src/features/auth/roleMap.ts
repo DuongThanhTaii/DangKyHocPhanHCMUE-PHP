@@ -1,6 +1,7 @@
 import type { Role } from "./types";
 
 export const ROLE_HOME: Record<Role, string> = {
+  admin_system: "/admin",
   phong_dao_tao: "/pdt",
   truong_khoa: "/tk",
   tro_ly_khoa: "/tlk",

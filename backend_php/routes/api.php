@@ -198,3 +198,11 @@ Route::group(['middleware' => ['auth:api', 'truong_khoa'], 'prefix' => 'tk'], fu
     Route::post('de-xuat-hoc-phan/duyet', [\App\Http\Controllers\Api\TK\TKController::class, 'duyetDeXuat']);
     Route::post('de-xuat-hoc-phan/tu-choi', [\App\Http\Controllers\Api\TK\TKController::class, 'tuChoiDeXuat']);
 });
+
+// Admin (Phòng CNTT) endpoints - require auth + admin_system role
+Route::group(['middleware' => ['auth:api', 'admin_system'], 'prefix' => 'admin'], function () {
+    // RBAC Management
+    Route::get('roles', [\App\Http\Controllers\Api\Admin\RBACController::class, 'getRoles']);
+    Route::get('roles/{id}/permissions', [\App\Http\Controllers\Api\Admin\RBACController::class, 'getRolePermissions']);
+    Route::put('roles/{roleId}/permissions/{permissionId}', [\App\Http\Controllers\Api\Admin\RBACController::class, 'togglePermission']);
+});

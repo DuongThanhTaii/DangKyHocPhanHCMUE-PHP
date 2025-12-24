@@ -37,7 +37,7 @@ class PaymentController extends Controller
 
             if (!$hocKyId) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Thiếu thông tin học kỳ (hocKyId)',
                     'errorCode' => 'MISSING_PARAM'
                 ], 400);
@@ -48,7 +48,7 @@ class PaymentController extends Controller
 
             if (!$userProfile) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Không tìm thấy thông tin người dùng',
                     'errorCode' => 'USER_NOT_FOUND'
                 ], 404);
@@ -58,7 +58,7 @@ class PaymentController extends Controller
 
             if (!$sinhVien) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Không tìm thấy thông tin sinh viên',
                     'errorCode' => 'STUDENT_NOT_FOUND'
                 ], 404);
@@ -69,19 +69,19 @@ class PaymentController extends Controller
 
         } catch (\InvalidArgumentException $e) {
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => $e->getMessage(),
                 'errorCode' => 'INVALID_PARAM'
             ], 400);
         } catch (\RuntimeException $e) {
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => $e->getMessage(),
                 'errorCode' => 'NO_REGISTRATION'
             ], 400);
         } catch (\Throwable $e) {
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => 'Lỗi: ' . $e->getMessage(),
                 'errorCode' => 'INTERNAL_ERROR'
             ], 500);
@@ -98,7 +98,7 @@ class PaymentController extends Controller
 
             if (!$orderId) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Thiếu mã giao dịch (orderId)',
                     'errorCode' => 'MISSING_PARAM'
                 ], 400);
@@ -108,14 +108,14 @@ class PaymentController extends Controller
 
             if (!$transaction) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Không tìm thấy giao dịch',
                     'errorCode' => 'TRANSACTION_NOT_FOUND'
                 ], 404);
             }
 
             return response()->json([
-                'success' => true,
+                'isSuccess' => true,
                 'data' => [
                     'orderId' => $transaction->order_id,
                     'status' => $transaction->status ?? 'pending',
@@ -129,7 +129,7 @@ class PaymentController extends Controller
 
         } catch (\Throwable $e) {
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => 'Lỗi: ' . $e->getMessage(),
                 'errorCode' => 'INTERNAL_ERROR'
             ], 500);
@@ -154,19 +154,19 @@ class PaymentController extends Controller
         } catch (\InvalidArgumentException $e) {
             \Log::warning("[IPN] Invalid: " . $e->getMessage());
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => $e->getMessage()
             ], 400);
         } catch (\RuntimeException $e) {
             \Log::warning("[IPN] Not found: " . $e->getMessage());
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => $e->getMessage()
             ], 404);
         } catch (\Throwable $e) {
             \Log::error("[IPN] Error: " . $e->getMessage());
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => 'Lỗi: ' . $e->getMessage()
             ], 500);
         }
@@ -183,7 +183,7 @@ class PaymentController extends Controller
 
             if (!$orderId) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Thiếu mã giao dịch (orderId)',
                     'errorCode' => 'MISSING_PARAM'
                 ], 400);
@@ -193,7 +193,7 @@ class PaymentController extends Controller
 
             if (!$transaction) {
                 return response()->json([
-                    'success' => false,
+                    'isSuccess' => false,
                     'message' => 'Không tìm thấy giao dịch',
                     'errorCode' => 'TRANSACTION_NOT_FOUND'
                 ], 404);
@@ -208,7 +208,7 @@ class PaymentController extends Controller
             \Log::info("[DEMO] Payment {$orderId} completed with status: {$status}");
 
             return response()->json([
-                'success' => true,
+                'isSuccess' => true,
                 'data' => [
                     'orderId' => $orderId,
                     'status' => $transaction->status,
@@ -219,7 +219,7 @@ class PaymentController extends Controller
 
         } catch (\Throwable $e) {
             return response()->json([
-                'success' => false,
+                'isSuccess' => false,
                 'message' => 'Lỗi: ' . $e->getMessage(),
                 'errorCode' => 'INTERNAL_ERROR'
             ], 500);
@@ -264,7 +264,7 @@ class PaymentController extends Controller
                 'return_code' => $success ? 1 : 0,
                 'return_message' => $success ? 'Success' : 'Failed'
             ]),
-            default => response()->json(['success' => $success]),
+            default => response()->json(['isSuccess' => $success]),
         };
     }
 }

@@ -16,6 +16,7 @@ import GVLayout from "./layouts/GVLayout";
 import TroLyKhoaLayout from "./layouts/TroLyKhoaLayout";
 import TruongKhoaLayout from "./layouts/TruongKhoaLayout";
 import SVLayout from "./layouts/SVLayout";
+import AdminLayout from "./layouts/AdminLayout";
 
 // ============================================================
 // LAZY IMPORTS - Các pages được load khi cần (code splitting)
@@ -51,11 +52,16 @@ const LichSuDangKy = lazy(() => import("./pages/sv/LichSuDangKyHocPhan"));
 const XemThoiKhoaBieu = lazy(() => import("./pages/sv/XemThoiKhoaBieu"));
 const DangKyHocPhan = lazy(() => import("./pages/sv/DangKyHocPhan"));
 const ThanhToanHocPhi = lazy(() => import("./pages/sv/ThanhToanHocPhi"));
-const PaymentResult = lazy(() => import("./pages/sv/PaymentResult"));
+const PaymentResult = lazy(() => import("./pages/sv/components/payment/PaymentResult"));
 const DemoPaymentPage = lazy(() => import("./pages/sv/DemoPaymentPage"));
 const SVLopHocPhanList = lazy(() => import("./pages/sv/SVLopHocPhanList"));
 const SVLopHocPhanDetail = lazy(() => import("./pages/sv/SVLopHocPhanDetail"));
 const TaiLieuHocTap = lazy(() => import("./pages/sv/TaiLieuHocTap"));
+
+// Admin Pages
+const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const RoleList = lazy(() => import("./pages/admin/RoleList"));
+const RolePermissions = lazy(() => import("./pages/admin/RolePermissions"));
 
 // ============================================================
 // HELPER COMPONENT - Wrap lazy components với Suspense + Loader
@@ -159,6 +165,18 @@ export const router = createBrowserRouter([
       { path: "tai-lieu", element: <LazyPage><TaiLieuHocTap /></LazyPage> },
       { path: "lop-hoc-phan", element: <LazyPage><SVLopHocPhanList /></LazyPage> },
       { path: "lop-hoc-phan/:id", element: <LazyPage><SVLopHocPhanDetail /></LazyPage> },
+    ],
+  },
+
+  // Admin (Phòng CNTT) Routes
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: "dashboard", element: <LazyPage><Dashboard /></LazyPage> },
+      { path: "roles", element: <LazyPage><RoleList /></LazyPage> },
+      { path: "roles/:roleId/permissions", element: <LazyPage><RolePermissions /></LazyPage> },
     ],
   },
 

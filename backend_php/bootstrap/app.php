@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'giang_vien' => \App\Http\Middleware\EnsureUserIsGiangVien::class,
             'tro_ly_khoa' => \App\Http\Middleware\EnsureUserIsTroLyKhoa::class,
             'truong_khoa' => \App\Http\Middleware\EnsureUserIsTruongKhoa::class,
+            'admin_system' => \App\Http\Middleware\EnsureUserIsAdminSystem::class,
+            // Dynamic RBAC middleware (Phase 2A)
+            'rbac' => \App\Http\Middleware\DynamicRBACMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

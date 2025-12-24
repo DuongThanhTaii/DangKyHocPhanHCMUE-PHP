@@ -1,4 +1,5 @@
 export type Role =
+  | "admin_system"
   | "phong_dao_tao"
   | "truong_khoa"
   | "tro_ly_khoa"

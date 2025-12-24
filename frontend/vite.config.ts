@@ -58,7 +58,9 @@ export default defineConfig({
     },
     proxy: {
       '/api': {
-        target: 'http://backend:8000',
+        // For Docker: set VITE_API_URL=http://backend-php:8000
+        // For Local:  http://localhost:8000
+        target: 'http://backend-php:8000',
         changeOrigin: true,
         secure: false,
       },

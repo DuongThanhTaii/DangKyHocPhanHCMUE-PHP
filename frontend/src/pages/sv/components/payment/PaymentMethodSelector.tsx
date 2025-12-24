@@ -3,24 +3,24 @@ import React from "react";
 interface PaymentMethod {
   id: "momo" | "vnpay" | "zalopay";
   name: string;
-  logo: string; // ✅ Change to image path
+  logo: string; 
 }
 
 const PAYMENT_METHODS: PaymentMethod[] = [
   {
     id: "momo",
     name: "MoMo",
-    logo: "/assets/icon/momo.svg", // ✅ Use SVG from public
+    logo: "/assets/icon/momo.svg",
   },
   {
     id: "vnpay",
     name: "VNPay",
-    logo: "/assets/icon/vnpay.svg", // ✅ Use SVG from public
+    logo: "/assets/icon/vnpay.svg", 
   },
   {
     id: "zalopay",
     name: "ZaloPay",
-    logo: "/assets/icon/zalopay.svg", // ✅ Use SVG from public
+    logo: "/assets/icon/zalopay.svg", 
   },
 ];
 

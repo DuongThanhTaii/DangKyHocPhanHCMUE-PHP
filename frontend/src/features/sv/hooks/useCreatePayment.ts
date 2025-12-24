@@ -16,7 +16,7 @@ export const useCreatePayment = () => {
                 return { success: true, data: result.data };
             } else {
                 // ✅ Handle specific error codes
-                const errorCode = result.errorCode;
+                const errorCode = result.error;
 
                 if (errorCode === "ALREADY_PAID") {
                     openNotify({

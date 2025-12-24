@@ -67,7 +67,8 @@ class HandleIPNUseCase
         return match ($provider) {
             'momo' => strval($data['resultCode'] ?? '-1'),
             'vnpay' => strval($data['vnp_ResponseCode'] ?? '-1'),
-            'zalopay' => strval($data['return_code'] ?? '-1'),
+            // ZaloPay IPN sends {data, mac, type} where type=1 means success
+            'zalopay' => strval($data['type'] ?? '-1'),
             default => '-1',
         };
     }

@@ -1,0 +1,95 @@
+# Docker Compose for Local Development
+# Backend PHP (Laravel) + Frontend (React/Vite)
+# Usage: docker compose -f docker-compose.dev.yml up
+
+services:
+  # =============================================
+  # Backend PHP (Laravel)
+  # =============================================
+  backend-php:
+    build:
+      context: ./backend_php
+      dockerfile: Dockerfile.dev
+    container_name: dkhp-backend-php
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=pgsql
+      - DB_HOST=${DB_HOST:-ep-winter-dream-a1hyufsu-pooler.ap-southeast-1.aws.neon.tech}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_DATABASE=${DB_DATABASE:-test_neondb}
+      - DB_USERNAME=${DB_USERNAME:-neondb_owner}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CACHE_STORE=redis
+    env_file:
+      - ./backend_php/.env
+    volumes:
+      - ./backend_php:/var/www/html
+      - /var/www/html/vendor  # Exclude vendor from bind mount
+    working_dir: /var/www/html
+    command: php artisan serve --host=0.0.0.0 --port=8000
+    restart: unless-stopped
+    networks:
+      - dkhp-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/config/tiet-hoc"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # =============================================
+  # Frontend (React + Vite)
+  # =============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: dkhp-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Exclude node_modules from bind mount
+    working_dir: /app
+    command: npm run dev -- --host 0.0.0.0
+    restart: unless-stopped
+    networks:
+      - dkhp-network
+    depends_on:
+      - backend-php
+
+  # =============================================
+  # Redis (Caching)
+  # =============================================
+  redis:
+    image: redis:7-alpine
+    container_name: dkhp-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    networks:
+      - dkhp-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  dkhp-network:
+    driver: bridge
+
+volumes:
+  redis-data:

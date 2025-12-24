@@ -170,6 +170,22 @@ class AppServiceProvider extends ServiceProvider
             \App\Domain\SinhVien\Repositories\GhiDanhRepositoryInterface::class,
             \App\Infrastructure\SinhVien\Persistence\Repositories\EloquentGhiDanhRepository::class
         );
+
+        // =============================================
+        // RBAC Module - Dynamic Role-Based Access Control
+        // =============================================
+        $this->app->bind(
+            \App\Domain\RBAC\Repositories\RBACRepositoryInterface::class,
+            \App\Infrastructure\RBAC\Persistence\Repositories\EloquentRBACRepository::class
+        );
+
+        // =============================================
+        // Admin Module - Phòng CNTT RBAC Management
+        // =============================================
+        $this->app->bind(
+            \App\Domain\Admin\Repositories\AdminRepositoryInterface::class,
+            \App\Infrastructure\Admin\Persistence\Repositories\AdminRepository::class
+        );
     }
 
     /**

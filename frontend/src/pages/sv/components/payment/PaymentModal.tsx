@@ -30,7 +30,7 @@ export default function PaymentModal({
   hocKyId,
   onSubmit,
 }: Props) {
-  const [selectedMethod, setSelectedMethod] = useState<string | null>("momo"); // ✅ Default MoMo
+  const [selectedMethod, setSelectedMethod] = useState<string | null>("momo"); 
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;

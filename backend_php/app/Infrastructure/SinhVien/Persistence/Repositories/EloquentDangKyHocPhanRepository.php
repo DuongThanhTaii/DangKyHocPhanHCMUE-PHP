@@ -145,13 +145,13 @@ class EloquentDangKyHocPhanRepository implements DangKyHocPhanRepositoryInterfac
             return collect();
         }
 
-        return ChiTietLichSuDangKy::with(['dangKyHocPhan.lopHocPhan.hocPhan.monHoc'])
+        return ChiTietLichSuDangKy::with(['dangKyHocPhan.lopHocPhan.hocPhan.monHoc', 'lopHocPhan.hocPhan.monHoc'])
             ->where('lich_su_dang_ky_id', $lichSu->id)
             ->orderBy('thoi_gian', 'desc')
             ->get();
     }
 
-    public function logRegistrationAction(string $sinhVienId, string $hocKyId, string $dangKyId, string $action): void
+    public function logRegistrationAction(string $sinhVienId, string $hocKyId, string $dangKyId, string $lopHocPhanId, string $action): void
     {
         $lichSu = LichSuDangKy::firstOrCreate(
             [
@@ -168,6 +168,7 @@ class EloquentDangKyHocPhanRepository implements DangKyHocPhanRepositoryInterfac
             'id' => Str::uuid()->toString(),
             'lich_su_dang_ky_id' => $lichSu->id,
             'dang_ky_hoc_phan_id' => $dangKyId,
+            'lop_hoc_phan_id' => $lopHocPhanId,
             'hanh_dong' => $action,
             'thoi_gian' => now(),
         ]);
@@ -236,7 +237,7 @@ class EloquentDangKyHocPhanRepository implements DangKyHocPhanRepositoryInterfac
 
     public function getDocumentsForRegisteredClasses(string $sinhVienId, string $hocKyId): Collection
     {
-        $dangKys = DangKyHocPhan::with(['lopHocPhan.hocPhan.monHoc'])
+        $dangKys = DangKyHocPhan::with(['lopHocPhan.hocPhan.monHoc', 'lopHocPhan.giangVien'])
             ->where('sinh_vien_id', $sinhVienId)
             ->whereHas('lopHocPhan.hocPhan', function ($q) use ($hocKyId) {
                 $q->where('id_hoc_ky', $hocKyId);
@@ -254,7 +255,10 @@ class EloquentDangKyHocPhanRepository implements DangKyHocPhanRepositoryInterfac
             $result->push([
                 'lopHocPhanId' => $lhp->id,
                 'maLop' => $lhp->ma_lop,
+                'maMon' => $monHoc?->ma_mon ?? '',
                 'tenMon' => $monHoc?->ten_mon ?? '',
+                'soTinChi' => $monHoc?->so_tin_chi ?? 0,
+                'giangVien' => $lhp->giangVien?->ho_ten ?? '',
                 'taiLieu' => $taiLieus->map(function ($tl) {
                     return [
                         'id' => $tl->id,

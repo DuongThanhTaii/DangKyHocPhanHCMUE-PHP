@@ -61,6 +61,16 @@
   font-size: 18px;
   border-radius: 6px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-preview svg,
+.btn-download svg,
+.btn-delete svg {
+  width: 18px;
+  height: 18px;
 }
 
 .btn-preview:hover {

@@ -41,6 +41,7 @@ class GetLopHocPhanForGVUseCase
         return [
             'isSuccess' => true,
             'data' => $data,
+            'debug_giangVienId' => $giangVienId, // DEBUG: xem ID đang query
             'message' => "Lấy thành công {$data->count()} lớp học phần"
         ];
     }

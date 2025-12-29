@@ -47,8 +47,10 @@ class GetRegisteredClassesUseCase
             $monHocMap[$maMon]['danhSachLop'][] = [
                 'id' => $lhp->id,
                 'maLop' => $lhp->ma_lop,
+                'tenLop' => $lhp->ma_lop,
                 'soLuongHienTai' => $lhp->so_luong_hien_tai ?? 0,
                 'soLuongToiDa' => $lhp->so_luong_toi_da ?? 50,
+                'giangVien' => $lhp->giangVien?->ho_ten ?? '',
                 'tkb' => $tkbList,
                 'trangThai' => $dk->trang_thai,
             ];

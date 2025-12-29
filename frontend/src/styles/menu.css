@@ -725,7 +725,7 @@ button.btn__quanlylhp.active {
 }
 
 .w__100p {
-  width: 100% !important;
+  width: 106% !important;
 }
 
 input {
@@ -2300,6 +2300,11 @@ th {
 .tab-btn span {
   line-height: 1; /* tránh chữ bị lệch xuống */
   display: inline-block;
+}
+
+.tab-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* highlight row đang active */

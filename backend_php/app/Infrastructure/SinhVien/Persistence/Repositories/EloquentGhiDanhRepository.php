@@ -17,7 +17,7 @@ class EloquentGhiDanhRepository implements GhiDanhRepositoryInterface
 {
     public function getAvailableSubjectsForEnrollment(string $hocKyId, string $khoaId): Collection
     {
-        return HocPhan::with(['monHoc'])
+        return HocPhan::with(['monHoc.khoa'])
             ->where('id_hoc_ky', $hocKyId)
             ->where('trang_thai_mo', true)
             ->whereHas('monHoc', function ($q) use ($khoaId) {

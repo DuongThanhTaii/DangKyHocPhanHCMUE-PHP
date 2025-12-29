@@ -19,6 +19,7 @@ class ChiTietLichSuDangKy extends Model
         'id',
         'lich_su_dang_ky_id',
         'dang_ky_hoc_phan_id',
+        'lop_hoc_phan_id',
         'hanh_dong',
         'thoi_gian',
     ];
@@ -35,5 +36,10 @@ class ChiTietLichSuDangKy extends Model
     public function dangKyHocPhan()
     {
         return $this->belongsTo(DangKyHocPhan::class, 'dang_ky_hoc_phan_id');
+    }
+
+    public function lopHocPhan()
+    {
+        return $this->belongsTo(LopHocPhan::class, 'lop_hoc_phan_id');
     }
 }

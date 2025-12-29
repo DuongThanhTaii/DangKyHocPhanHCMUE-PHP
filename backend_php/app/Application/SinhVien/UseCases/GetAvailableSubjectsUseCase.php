@@ -27,6 +27,7 @@ class GetAvailableSubjectsUseCase
                 'tenMon' => $monHoc?->ten_mon ?? '',
                 'soTinChi' => $monHoc?->so_tin_chi ?? 0,
                 'laMonChung' => $monHoc?->la_mon_chung ?? false,
+                'tenKhoa' => $monHoc?->khoa?->ten_khoa ?? '',
             ];
         });
 

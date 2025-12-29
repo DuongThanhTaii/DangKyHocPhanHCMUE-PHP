@@ -21,6 +21,13 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // State để theo dõi các field đã được tương tác (touched)
+  const [touched, setTouched] = useState({
+    username: false,
+    password: false,
+    email: false,
+  });
+
   const [mode, setMode] = useState<"login" | "forgot">("login");
   const [email, setEmail] = useState("");
   const [isSendingForgot, setIsSendingForgot] = useState(false);
@@ -87,8 +94,8 @@ function LoginPage() {
         typeof err?.data === "string"
           ? err.data
           : err?.data?.message ||
-            err?.message ||
-            "Đăng nhập thất bại hoặc lỗi kết nối máy chủ";
+          err?.message ||
+          "Đăng nhập thất bại hoặc lỗi kết nối máy chủ";
       setErrorMsg(msg);
       openNotify?.(msg, "error");
     }
@@ -140,10 +147,13 @@ function LoginPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  onBlur={() => setTouched((prev) => ({ ...prev, username: true }))}
                   autoComplete="username"
                 />
                 <label>Tên đăng nhập</label>
-                <p className="form__message">Tên đăng nhập là bắt buộc</p>
+                {touched.username && !username && (
+                  <p className="form__message">Tên đăng nhập là bắt buộc</p>
+                )}
               </div>
 
               <div className="form__group">
@@ -154,10 +164,13 @@ function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
                   autoComplete="current-password"
                 />
                 <label>Mật khẩu</label>
-                <p className="form__message">Mật khẩu là bắt buộc</p>
+                {touched.password && !password && (
+                  <p className="form__message">Mật khẩu là bắt buộc</p>
+                )}
               </div>
             </>
           )}
@@ -172,10 +185,13 @@ function LoginPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  onBlur={() => setTouched((prev) => ({ ...prev, username: true }))}
                   autoComplete="username"
                 />
                 <label>Tên đăng nhập</label>
-                <p className="form__message">Tên đăng nhập là bắt buộc</p>
+                {touched.username && !username && (
+                  <p className="form__message">Tên đăng nhập là bắt buộc</p>
+                )}
               </div>
               <div className="form__group">
                 <input
@@ -184,12 +200,15 @@ function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
                   autoComplete="email"
                 />
                 <label>Email</label>
-                <p className="form__message">
-                  Email phải đúng với email được cấp
-                </p>
+                {touched.email && !email && (
+                  <p className="form__message">
+                    Email phải đúng với email được cấp
+                  </p>
+                )}
               </div>
             </>
           )}
@@ -216,8 +235,8 @@ function LoginPage() {
                 ? "Đang đăng nhập..."
                 : "Đăng nhập"
               : isSendingForgot
-              ? "Đang gửi..."
-              : "Gửi email khôi phục"}
+                ? "Đang gửi..."
+                : "Gửi email khôi phục"}
           </button>
 
           <hr />

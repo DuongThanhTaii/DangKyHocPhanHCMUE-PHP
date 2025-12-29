@@ -177,8 +177,13 @@ export default function GVThoiKhoaBieu() {
   const getCellItems = (roomId: string, dateString: string) => {
     return tkb
       .filter((item) => {
-        const itemDate = new Date(item.ngay_hoc).toISOString().split("T")[0];
-        return item.phong.id === roomId && itemDate === dateString;
+        if (!item.ngay_hoc) return false;
+        try {
+          const itemDate = new Date(item.ngay_hoc).toISOString().split("T")[0];
+          return item.phong.id === roomId && itemDate === dateString;
+        } catch {
+          return false;
+        }
       })
       .sort((a, b) => a.tiet_bat_dau - b.tiet_bat_dau);
   };
@@ -213,6 +218,8 @@ export default function GVThoiKhoaBieu() {
             backgroundColor: "rgba(0, 42, 85, 0.24)",
             fontWeight: 700,
             color: "rgb(23, 43, 77)",
+            textAlign: "center",
+            verticalAlign: "middle",
           }}
         >
           {room.ma}
@@ -223,6 +230,14 @@ export default function GVThoiKhoaBieu() {
           return (
             <td key={dayIndex} className="tkb-cell">
               {items.map((item, i) => {
+                const safeDate = (d: string | Date | null) => {
+                  if (!d) return "";
+                  try {
+                    return new Date(d).toISOString().split("T")[0];
+                  } catch {
+                    return "";
+                  }
+                };
                 const classInstance: ClassInstance = {
                   id: `${item.lop_hoc_phan.id}_${i}`,
                   maLopHP: item.mon_hoc.ma_mon,
@@ -234,12 +249,8 @@ export default function GVThoiKhoaBieu() {
                   tietKetThuc: item.tiet_ket_thuc,
                   phongHocId: item.phong.id,
                   tenPhongHoc: item.phong.ma_phong,
-                  ngayBatDau: new Date(item.ngay_hoc)
-                    .toISOString()
-                    .split("T")[0],
-                  ngayKetThuc: new Date(item.ngay_hoc)
-                    .toISOString()
-                    .split("T")[0],
+                  ngayBatDau: safeDate(item.ngay_hoc),
+                  ngayKetThuc: safeDate(item.ngay_hoc),
                   isFromBackend: true,
                   isReadonly: true,
                 };

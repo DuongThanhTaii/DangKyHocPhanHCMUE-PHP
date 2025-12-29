@@ -90,18 +90,24 @@ class GhiDanhController extends Controller
 
     /**
      * GET /api/sv/mon-hoc-ghi-danh?hocKyId={id}
+     * Nếu không truyền hocKyId, sẽ tự động lấy học kỳ hiện hành
      */
     public function getMonHocGhiDanh(Request $request): JsonResponse
     {
         try {
             $hocKyId = $request->query('hocKyId') ?? $request->query('hoc_ky_id');
 
+            // Nếu không truyền hocKyId, tự động lấy học kỳ hiện hành
             if (!$hocKyId) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'data' => null,
-                    'message' => 'Thiếu hocKyId'
-                ], 400);
+                $hocKy = $this->repository->getCurrentHocKy();
+                if (!$hocKy) {
+                    return response()->json([
+                        'isSuccess' => false,
+                        'data' => null,
+                        'message' => 'Không tìm thấy học kỳ hiện hành'
+                    ], 400);
+                }
+                $hocKyId = $hocKy->id;
             }
 
             $sinhVien = $this->getSinhVienFromToken();

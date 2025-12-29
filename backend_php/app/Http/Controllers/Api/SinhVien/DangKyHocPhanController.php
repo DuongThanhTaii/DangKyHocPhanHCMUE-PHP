@@ -272,7 +272,7 @@ class DangKyHocPhanController extends Controller
                 DB::transaction(function () use ($sinhVien, $lopHocPhanId, $hocKyId) {
                     $dangKy = $this->repository->createRegistration($sinhVien->id, $lopHocPhanId);
                     $this->repository->incrementClassCount($lopHocPhanId);
-                    $this->repository->logRegistrationAction($sinhVien->id, $hocKyId, $dangKy->id, 'dang_ky');
+                    $this->repository->logRegistrationAction($sinhVien->id, $hocKyId, $dangKy->id, $lopHocPhanId, 'dang_ky');
                 });
 
                 return response()->json([
@@ -366,7 +366,7 @@ class DangKyHocPhanController extends Controller
 
             // Perform Cancellation
             DB::transaction(function () use ($sinhVien, $lopHocPhanId, $hocKyId, $dangKy) {
-                $this->repository->logRegistrationAction($sinhVien->id, $hocKyId, $dangKy->id, 'huy_dang_ky');
+                $this->repository->logRegistrationAction($sinhVien->id, $hocKyId, $dangKy->id, $lopHocPhanId, 'huy_dang_ky');
                 $this->repository->deleteRegistration($dangKy);
                 $this->repository->decrementClassCount($lopHocPhanId);
             });
@@ -483,7 +483,7 @@ class DangKyHocPhanController extends Controller
 
             // Perform Transfer
             DB::transaction(function () use ($sinhVien, $lopCuId, $lopMoiId, $hocKyId, $dangKyCu) {
-                $this->repository->logRegistrationAction($sinhVien->id, $hocKyId, $dangKyCu->id, 'chuyen_lop');
+                $this->repository->logRegistrationAction($sinhVien->id, $hocKyId, $dangKyCu->id, $lopMoiId, 'chuyen_lop');
                 $this->repository->transferRegistration($dangKyCu, $lopMoiId);
                 $this->repository->decrementClassCount($lopCuId);
                 $this->repository->incrementClassCount($lopMoiId);

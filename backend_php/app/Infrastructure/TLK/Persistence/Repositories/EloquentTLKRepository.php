@@ -32,12 +32,12 @@ class EloquentTLKRepository implements TLKRepositoryInterface
 
     public function getPhongHocByKhoa(string $khoaId): Collection
     {
-        return Phong::where('khoa_id', $khoaId)->orderBy('ma_phong', 'asc')->get();
+        return Phong::with('coSo')->where('khoa_id', $khoaId)->orderBy('ma_phong', 'asc')->get();
     }
 
     public function getAvailablePhongHocByKhoa(string $khoaId): Collection
     {
-        return Phong::where('khoa_id', $khoaId)
+        return Phong::with('coSo')->where('khoa_id', $khoaId)
             ->where(function ($q) {
                 $q->whereNull('da_dc_su_dung')
                     ->orWhere('da_dc_su_dung', false);

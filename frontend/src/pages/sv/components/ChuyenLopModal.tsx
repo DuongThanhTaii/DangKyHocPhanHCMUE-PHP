@@ -56,6 +56,7 @@ export default function ChuyenLopModal({
                   <th>STT</th>
                   <th>Mã lớp</th>
                   <th>Tên lớp</th>
+                  <th>Giảng viên</th>
                   <th>SL</th>
                   <th>TKB</th>
                   <th>Thao tác</th>
@@ -67,13 +68,21 @@ export default function ChuyenLopModal({
                     <td>{index + 1}</td>
                     <td>{lop.maLop}</td>
                     <td>{lop.tenLop}</td>
+                    <td>{lop.giangVien || "Chưa phân công"}</td>
                     <td>
                       {lop.soLuongHienTai}/{lop.soLuongToiDa}
                     </td>
                     <td style={{ whiteSpace: "pre-line" }}>
-                      {lop.tkb.map((t, i) => (
-                        <div key={i}>{t.formatted}</div>
-                      ))}
+                      {lop.tkb.map((t, i) => {
+                        const tiet = t.tietBatDau && t.tietKetThuc
+                          ? `Tiết ${t.tietBatDau}-${t.tietKetThuc}`
+                          : (t.tiet || "");
+                        return (
+                          <div key={i}>
+                            Thứ {t.thu}, {tiet}, {t.phong || ""}
+                          </div>
+                        );
+                      })}
                     </td>
                     <td>
                       <button

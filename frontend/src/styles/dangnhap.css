@@ -130,7 +130,8 @@ a {
 .form__group label {
   position: absolute;
   left: 16px;
-  top: 41%;
+  top: 28px;
+  /* Căn giữa với input (input height ~56px / 2 = 28px) */
   transform: translateY(-50%);
   color: var(--input-color);
   font-size: 1.6rem;
@@ -140,8 +141,8 @@ a {
   padding: 0 4px;
 }
 
-.form__group input:focus + label,
-.form__group input:not(:placeholder-shown) + label {
+.form__group input:focus+label,
+.form__group input:not(:placeholder-shown)+label {
   top: 0;
   font-size: 1.2rem;
 }
@@ -158,11 +159,11 @@ a {
   color: var(--main-color);
 }
 
-.form__group input:valid + label {
+.form__group input:valid+label {
   color: var(--main-color);
 }
 
-.form__group input:valid + label + .form__message {
+.form__group input:valid+label+.form__message {
   visibility: hidden;
 }
 

@@ -27,8 +27,14 @@ class GetRegistrationHistoryUseCase
         }
 
         $lichSuItems = $chiTiets->map(function ($ct) {
-            $dangKy = $ct->dangKyHocPhan;
-            $lhp = $dangKy?->lopHocPhan;
+            // Try to get lopHocPhan directly first (if lop_hoc_phan_id is set)
+            $lhp = $ct->lopHocPhan;
+
+            // Fallback to getting from dangKyHocPhan if direct relationship is not available
+            if (!$lhp && $ct->dangKyHocPhan) {
+                $lhp = $ct->dangKyHocPhan->lopHocPhan;
+            }
+
             $monHoc = $lhp?->hocPhan?->monHoc;
 
             return [

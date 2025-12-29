@@ -354,8 +354,7 @@ class GVController extends Controller
                 'uploaded_by' => $userProfile->id,
                 'ten_tai_lieu' => $tenTaiLieu,
                 'file_type' => $file->getClientMimeType(),
-                'file_size' => $file->getSize(),
-                's3_key' => $s3Key,
+                'file_path' => $s3Key,
             ]);
 
             return response()->json([
@@ -477,7 +476,15 @@ class GVController extends Controller
                 ], 503);
             }
 
-            $s3Key = $taiLieu->s3_key;
+            $s3Key = $taiLieu->file_path;
+
+            if (!$s3Key) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'data' => null,
+                    'message' => 'File path không tồn tại'
+                ], 404);
+            }
 
             if (!Storage::disk('s3')->exists($s3Key)) {
                 return response()->json([

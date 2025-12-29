@@ -27,17 +27,20 @@ export interface LopHocPhanItemDTO {
     tenLop: string;
     soLuongHienTai: number;
     soLuongToiDa: number;
+    giangVien?: string;
     tkb: TKBItemDTO[];
 }
 
 export interface TKBItemDTO {
     thu: number;
-    tiet: string;
+    tietBatDau?: number;
+    tietKetThuc?: number;
+    tiet?: string;  // fallback if backend sends string
     phong: string;
-    giangVien: string;
-    ngayBatDau: string;
-    ngayKetThuc: string;
-    formatted: string;
+    giangVien?: string;
+    ngayBatDau?: string;
+    ngayKetThuc?: string;
+    formatted?: string;
 }
 
 // ✅ Response đã đăng ký (flat list)
@@ -128,12 +131,13 @@ export interface MonHocTraCuuDTO {
 }
 
 export interface MonHocGhiDanhForSinhVien {
-    id: string;
-    maMonHoc: string;
-    tenMonHoc: string;
+    hocPhanId: string;
+    monHocId: string;
+    maMon: string;
+    tenMon: string;
     soTinChi: number;
+    laMonChung: boolean;
     tenKhoa: string;
-    tenGiangVien: string;
 }
 
 export interface RequestGhiDanhMonHoc {
@@ -146,12 +150,13 @@ export interface RequestHuyGhiDanhMonHoc {
 
 export interface MonHocDaGhiDanh {
     ghiDanhId: string;      // ID của record ghi_danh_hoc_phan
+    hocPhanId: string;      // ID học phần
     monHocId: string;       // ID môn học
-    maMonHoc: string;
-    tenMonHoc: string;
+    maMon: string;
+    tenMon: string;
     soTinChi: number;
-    tenKhoa: string;
-    tenGiangVien?: string;
+    ngayGhiDanh: string;
+    trangThai: string;
 }
 
 export interface DangKyHocPhanRequest {
@@ -161,6 +166,7 @@ export interface DangKyHocPhanRequest {
 
 
 export interface MonHocInfoDTO {
+    monHocId?: string;
     maMon: string;
     tenMon: string;
     soTinChi: number;

@@ -35,21 +35,21 @@ export const useGhiDanhMonHoc = () => {
                     }
                 } catch (err: any) {
                     errors.push(err.message || `Lỗi môn ${monHocId}`);
-                    console.error(`💥 Exception for ${monHocId}:`, err);
+                    console.error(`Exception for ${monHocId}:`, err);
                 }
             }
 
             // Show result notification
             if (successCount > 0) {
                 openNotify({
-                    message: `✅ Đã ghi danh thành công ${successCount}/${monHocIds.length} môn học`,
+                    message: `Đã ghi danh thành công ${successCount}/${monHocIds.length} môn học`,
                     type: "success",
                 });
             }
 
             if (errors.length > 0) {
                 openNotify({
-                    message: `❌ Có ${errors.length} môn thất bại: ${errors.join(", ")}`,
+                    message: `Có ${errors.length} môn thất bại: ${errors.join(", ")}`,
                     type: "error",
                 });
             }
@@ -83,7 +83,7 @@ export const useGhiDanhMonHoc = () => {
 
 
                 openNotify({
-                    message: `✅ Đã hủy ghi danh ${successCount} môn học`,
+                    message: `Đã hủy ghi danh ${successCount} môn học`,
                     type: "success",
                 });
 
@@ -98,7 +98,7 @@ export const useGhiDanhMonHoc = () => {
                 return 0;
             }
         } catch (error: any) {
-            console.error("💥 Error hủy ghi danh:", error);
+            console.error("Error hủy ghi danh:", error);
 
             openNotify({
                 message: error.message || "Có lỗi xảy ra khi hủy ghi danh",

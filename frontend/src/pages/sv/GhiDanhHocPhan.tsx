@@ -48,13 +48,13 @@ export default function GhiDanhHocPhan(): JSX.Element {
   } = useGhiDanhMonHoc();
 
   const hocPhanList: HocPhan[] = monHocGhiDanhData.map((mh) => ({
-    id: mh.id,
-    hoc_phan_id: mh.id,
-    ma_mon: mh.maMonHoc,
-    ten_mon: mh.tenMonHoc,
+    id: mh.monHocId,
+    hoc_phan_id: mh.hocPhanId,
+    ma_mon: mh.maMon,
+    ten_mon: mh.tenMon,
     so_tin_chi: mh.soTinChi,
-    ten_khoa: mh.tenKhoa,
-    ten_giang_vien: mh.tenGiangVien,
+    ten_khoa: mh.tenKhoa || "",
+    ten_giang_vien: "",
   }));
 
   const [filteredList, setFilteredList] = useState<HocPhan[]>([]);
@@ -83,13 +83,13 @@ export default function GhiDanhHocPhan(): JSX.Element {
         const dsGD: HocPhanDaGhiDanh[] = result.data.map(
           (item: MonHocDaGhiDanh) => ({
             id: item.monHocId,
-            hoc_phan_id: item.monHocId,
+            hoc_phan_id: item.hocPhanId,
             ghi_danh_id: item.ghiDanhId,
-            ma_mon: item.maMonHoc,
-            ten_mon: item.tenMonHoc,
+            ma_mon: item.maMon,
+            ten_mon: item.tenMon,
             so_tin_chi: item.soTinChi,
-            ten_khoa: item.tenKhoa,
-            ten_giang_vien: item.tenGiangVien,
+            ten_khoa: "",
+            ten_giang_vien: "",
           })
         );
         setDaGhiDanhList(dsGD);
@@ -284,7 +284,6 @@ export default function GhiDanhHocPhan(): JSX.Element {
                     <th>Tên HP</th>
                     <th>STC</th>
                     <th>Khoa</th>
-                    <th>Giảng viên</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -306,7 +305,6 @@ export default function GhiDanhHocPhan(): JSX.Element {
                       <td>{hp.ten_mon}</td>
                       <td>{hp.so_tin_chi}</td>
                       <td>{hp.ten_khoa}</td>
-                      <td>{hp.ten_giang_vien || ""}</td>
                     </tr>
                   ))}
 
@@ -314,7 +312,7 @@ export default function GhiDanhHocPhan(): JSX.Element {
                   {filteredList.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={5}
                         style={{ textAlign: "center", padding: "20px" }}
                       >
                         Không có học phần nào.
@@ -352,8 +350,6 @@ export default function GhiDanhHocPhan(): JSX.Element {
                     <th>Mã HP</th>
                     <th>Tên HP</th>
                     <th>STC</th>
-                    <th>Khoa</th>
-                    <th>Giảng viên</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -371,8 +367,6 @@ export default function GhiDanhHocPhan(): JSX.Element {
                       <td>{hp.ma_mon}</td>
                       <td>{hp.ten_mon}</td>
                       <td>{hp.so_tin_chi}</td>
-                      <td>{hp.ten_khoa}</td>
-                      <td>{hp.ten_giang_vien || "Chưa phân công"}</td>
                     </tr>
                   ))}
                 </tbody>

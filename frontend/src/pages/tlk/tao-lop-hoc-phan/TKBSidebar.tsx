@@ -177,7 +177,9 @@ export default function TKBSidebar({
                   onUpdateInstance(selectedInstance.id, {
                     phongHocId: selectedPhongId,
                     tenPhongHoc: selectedPhong
-                      ? `${selectedPhong.maPhong} - ${selectedPhong.tenCoSo}`
+                      ? selectedPhong.tenCoSo
+                        ? `${selectedPhong.maPhong} - ${selectedPhong.tenCoSo}`
+                        : selectedPhong.maPhong
                       : "",
                   });
                 }}
@@ -263,9 +265,8 @@ function DraggableInstance({
     <div
       ref={setNodeRef}
       style={style}
-      className={`tkb-instance-item ${isSelected ? "selected" : ""} ${
-        !isComplete ? "incomplete" : ""
-      }`}
+      className={`tkb-instance-item ${isSelected ? "selected" : ""} ${!isComplete ? "incomplete" : ""
+        }`}
     >
       <span className="tkb-instance-drag-handle" {...attributes} {...listeners}>
         ⋮⋮

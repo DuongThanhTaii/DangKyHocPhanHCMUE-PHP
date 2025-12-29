@@ -48,7 +48,15 @@ export const useGVLopHocPhanDetail = (lhpId: string) => {
         try {
             const result = await gvLopHocPhanAPI.getDocuments(lhpId);
             if (result.isSuccess && result.data) {
-                setDocuments(result.data);
+                // Map backend camelCase to frontend snake_case
+                const mappedDocs = (result.data as any[]).map((doc: any) => ({
+                    id: doc.id,
+                    ten_tai_lieu: doc.tenTaiLieu || doc.ten_tai_lieu || '',
+                    file_path: doc.filePath || doc.file_path || '',
+                    file_type: doc.fileType || doc.file_type || '',
+                    created_at: doc.uploadedAt || doc.created_at || '',
+                }));
+                setDocuments(mappedDocs);
             }
         } catch (err) {
             console.error("Error loading documents:", err);

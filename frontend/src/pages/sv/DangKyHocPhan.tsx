@@ -43,7 +43,7 @@ export default function DangKyHocPhan() {
 
   // ✅ ALL STATE HOOKS
   const [activeTab, setActiveTab] = useState<"monChung" | "batBuoc" | "tuChon">(
-    "monChung"
+    "batBuoc"
   );
   const [selectedMonHoc, setSelectedMonHoc] = useState<MonHocInfoDTO | null>(
     null
@@ -78,14 +78,34 @@ export default function DangKyHocPhan() {
   };
 
   // ✅ ALL USEMEMO HOOKS
-  const sourceByTab = useMemo(
-    () => ({
+  // Merge available subjects with registered subjects to show all
+  const sourceByTab = useMemo(() => {
+    const available = {
       monChung: lopHocPhanData?.monChung || [],
       batBuoc: lopHocPhanData?.batBuoc || [],
       tuChon: lopHocPhanData?.tuChon || [],
-    }),
-    [lopHocPhanData]
-  );
+    };
+
+    // Add registered subjects that are not in available list
+    lopDaDangKy.forEach((mon) => {
+      const isInMonChung = available.monChung.some((m) => m.maMon === mon.maMon);
+      const isInBatBuoc = available.batBuoc.some((m) => m.maMon === mon.maMon);
+      const isInTuChon = available.tuChon.some((m) => m.maMon === mon.maMon);
+
+      if (!isInMonChung && !isInBatBuoc && !isInTuChon) {
+        // Add to batBuoc by default (registered subjects are typically required)
+        available.batBuoc.push({
+          monHocId: "",
+          maMon: mon.maMon,
+          tenMon: mon.tenMon,
+          soTinChi: mon.soTinChi,
+          danhSachLop: mon.danhSachLop,
+        });
+      }
+    });
+
+    return available;
+  }, [lopHocPhanData, lopDaDangKy]);
 
   const filteredMonHoc = useMemo(() => {
     const src = sourceByTab[activeTab] as MonHocInfoDTO[];
@@ -104,6 +124,7 @@ export default function DangKyHocPhan() {
       soTinChi: number;
       maLop: string;
       tenLop: string;
+      giangVien: string;
       tkbFormatted: string;
     }> = [];
 
@@ -116,7 +137,13 @@ export default function DangKyHocPhan() {
           soTinChi: mon.soTinChi,
           maLop: lop.maLop,
           tenLop: lop.tenLop,
-          tkbFormatted: lop.tkb.map((t) => t.formatted).join("\n"),
+          giangVien: lop.giangVien || "",
+          tkbFormatted: lop.tkb.map((t) => {
+            const tiet = t.tietBatDau && t.tietKetThuc
+              ? `Tiết ${t.tietBatDau}-${t.tietKetThuc}`
+              : (t.tiet || "");
+            return `Thứ ${t.thu}, ${tiet}, ${t.phong || ""}`.trim();
+          }).join("\n"),
         });
       });
     });
@@ -419,7 +446,7 @@ export default function DangKyHocPhan() {
               checked={activeTab === "monChung"}
               onChange={() => setActiveTab("monChung")}
             />
-            <span>Môn chung</span>
+            <span style={{ color: "#0c4874" }}>Môn chung</span>
           </label>
 
           {/* Bắt buộc */}
@@ -433,7 +460,7 @@ export default function DangKyHocPhan() {
               checked={activeTab === "batBuoc"}
               onChange={() => setActiveTab("batBuoc")}
             />
-            <span>Bắt buộc</span>
+            <span style={{ color: "#0c4874" }}>Bắt buộc</span>
           </label>
 
           {/* Tự chọn */}
@@ -447,7 +474,7 @@ export default function DangKyHocPhan() {
               checked={activeTab === "tuChon"}
               onChange={() => setActiveTab("tuChon")}
             />
-            <span>Tự chọn</span>
+            <span style={{ color: "#0c4874" }}>Tự chọn</span>
           </label>
         </div>
 
@@ -502,6 +529,7 @@ export default function DangKyHocPhan() {
                 <th>Mã môn</th>
                 <th>Tên môn</th>
                 <th>Tên lớp</th>
+                <th>Giảng viên</th>
                 <th>TKB</th>
                 <th>Thao tác</th>
               </tr>
@@ -509,13 +537,13 @@ export default function DangKyHocPhan() {
             <tbody>
               {loadingDaDK ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: 20 }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: 20 }}>
                     Đang tải...
                   </td>
                 </tr>
               ) : flatDaDangKy.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: 20 }}>
+                  <td colSpan={8} style={{ textAlign: "center", padding: 20 }}>
                     Chưa đăng ký lớp nào
                   </td>
                 </tr>
@@ -533,6 +561,7 @@ export default function DangKyHocPhan() {
                     <td>{lop.maMon}</td>
                     <td>{lop.tenMon}</td>
                     <td>{lop.tenLop}</td>
+                    <td>{lop.giangVien || "Chưa phân công"}</td>
                     <td style={{ whiteSpace: "pre-line" }}>
                       {lop.tkbFormatted}
                     </td>

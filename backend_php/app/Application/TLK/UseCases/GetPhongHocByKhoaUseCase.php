@@ -24,6 +24,7 @@ class GetPhongHocByKhoaUseCase
             return [
                 'id' => $p->id,
                 'maPhong' => $p->ma_phong,
+                'tenCoSo' => $p->coSo?->ten_co_so ?? '',
                 'sucChua' => $p->suc_chua ?? 0,
                 'daSuDung' => $p->da_dc_su_dung ?? false,
             ];

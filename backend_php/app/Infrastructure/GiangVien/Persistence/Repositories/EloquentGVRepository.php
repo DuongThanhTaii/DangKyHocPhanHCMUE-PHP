@@ -80,10 +80,8 @@ class EloquentGVRepository implements GVRepositoryInterface
             'lop_hoc_phan_id' => $data['lop_hoc_phan_id'],
             'uploaded_by' => $data['uploaded_by'],
             'ten_tai_lieu' => $data['ten_tai_lieu'],
-            'file_type' => $data['file_type'],
-            'file_size' => $data['file_size'],
-            's3_key' => $data['s3_key'],
-            'created_at' => now(),
+            'file_type' => $data['file_type'] ?? null,
+            'file_path' => $data['file_path'] ?? '',
         ]);
     }
 

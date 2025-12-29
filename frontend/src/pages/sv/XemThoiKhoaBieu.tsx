@@ -203,6 +203,8 @@ export default function XemThoiKhoaBieu() {
             backgroundColor: "rgba(0, 42, 85, 0.24)",
             fontWeight: 700,
             color: "rgb(23, 43, 77)",
+            textAlign: "center",
+            verticalAlign: "middle",
           }}
         >
           {room.ma}

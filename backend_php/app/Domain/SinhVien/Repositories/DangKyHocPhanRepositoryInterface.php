@@ -81,7 +81,7 @@ interface DangKyHocPhanRepositoryInterface
     /**
      * Ghi log đăng ký
      */
-    public function logRegistrationAction(string $sinhVienId, string $hocKyId, string $dangKyId, string $action): void;
+    public function logRegistrationAction(string $sinhVienId, string $hocKyId, string $dangKyId, string $lopHocPhanId, string $action): void;
 
     // ===== TKB =====
     /**

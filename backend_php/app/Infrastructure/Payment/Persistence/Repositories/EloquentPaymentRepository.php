@@ -47,12 +47,17 @@ class EloquentPaymentRepository implements PaymentRepositoryInterface
 
     public function updateHocPhiStatus(string $sinhVienId, string $hocKyId): void
     {
-        HocPhi::where('sinh_vien_id', $sinhVienId)
-            ->where('hoc_ky_id', $hocKyId)
-            ->update([
+        // Use updateOrCreate to handle case where hoc_phi record doesn't exist yet
+        HocPhi::updateOrCreate(
+            [
+                'sinh_vien_id' => $sinhVienId,
+                'hoc_ky_id' => $hocKyId,
+            ],
+            [
                 'trang_thai_thanh_toan' => 'da_thanh_toan',
                 'ngay_thanh_toan' => now(),
-            ]);
+            ]
+        );
     }
 
     public function calculateTuition(string $sinhVienId, string $hocKyId): ?array

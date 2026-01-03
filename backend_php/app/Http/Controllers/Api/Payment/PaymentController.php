@@ -205,6 +205,11 @@ class PaymentController extends Controller
                 'result_code' => $isSuccess ? '0' : '-1',
             ]);
 
+            // Update hoc_phi status when payment is successful
+            if ($isSuccess) {
+                $this->repository->updateHocPhiStatus($transaction->sinh_vien_id, $transaction->hoc_ky_id);
+            }
+
             \Log::info("[DEMO] Payment {$orderId} completed with status: {$status}");
 
             return response()->json([

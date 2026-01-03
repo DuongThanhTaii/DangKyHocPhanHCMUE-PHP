@@ -226,12 +226,19 @@ class EloquentDangKyHocPhanRepository implements DangKyHocPhanRepositoryInterfac
             ];
         }
 
+        // Check actual payment status from hoc_phi table
+        $hocPhi = \App\Infrastructure\Payment\Persistence\Models\HocPhi::where('sinh_vien_id', $sinhVienId)
+            ->where('hoc_ky_id', $hocKyId)
+            ->first();
+        
+        $trangThaiThanhToan = $hocPhi?->trang_thai_thanh_toan ?? 'chua_thanh_toan';
+
         return [
             'soTinChiDangKy' => $totalCredits,
             'donGiaTinChi' => $pricePerCredit,
             'tongHocPhi' => $totalCredits * $pricePerCredit,
             'chiTiet' => $chiTiet,
-            'trangThaiThanhToan' => 'chua_thanh_toan',
+            'trangThaiThanhToan' => $trangThaiThanhToan,
         ];
     }
 

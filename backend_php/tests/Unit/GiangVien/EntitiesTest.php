@@ -125,7 +125,7 @@ class EntitiesTest extends TestCase
         );
 
         // Default weights: 30% process, 20% practical, 50% final
-        $expected = (8.0 * 0.3) + (7.0 * 0.2) + (6.0 * 0.5); // 2.4 + 1.4 + 3.0 = 6.8
+        $expected = (8.0 * 0.3) + (7.0 * 0.2) + (6.0 * 0.5); 
         $this->assertEquals(6.8, $entity->calculateTotal());
     }
 

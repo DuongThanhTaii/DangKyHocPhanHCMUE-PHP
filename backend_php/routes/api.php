@@ -92,6 +92,11 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('dm/nganh', [\App\Http\Controllers\Api\Common\CommonController::class, 'getDanhSachNganh']);
 });
 
+// Update hoc ky date range (PDT only)
+Route::group(['middleware' => ['auth:api', 'pdt']], function () {
+    Route::patch('hoc-ky/dates', [\App\Http\Controllers\Api\Common\CommonController::class, 'updateHocKyDates']);
+});
+
 // Public config endpoint (no auth required)
 Route::get('config/tiet-hoc', [\App\Http\Controllers\Api\Common\CommonController::class, 'getConfigTietHoc']);
 

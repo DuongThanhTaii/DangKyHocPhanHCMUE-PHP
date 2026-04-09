@@ -9,6 +9,7 @@ use App\Application\Common\UseCases\GetCurrentHocKyUseCase;
 use App\Application\Common\UseCases\GetHocKyNienKhoaListUseCase;
 use App\Application\Common\UseCases\GetNganhListUseCase;
 use App\Application\Common\UseCases\GetNganhWithoutPolicyUseCase;
+use App\Domain\Pdt\Repositories\HocKyRepositoryInterface;
 use App\Domain\Pdt\Repositories\KhoaRepositoryInterface;
 
 /**
@@ -23,6 +24,7 @@ class CommonController extends Controller
         private GetHocKyNienKhoaListUseCase $getHocKyNienKhoaListUseCase,
         private GetNganhListUseCase $getNganhListUseCase,
         private GetNganhWithoutPolicyUseCase $getNganhWithoutPolicyUseCase,
+        private HocKyRepositoryInterface $hocKyRepository,
         private KhoaRepositoryInterface $khoaRepository,
     ) {
     }
@@ -130,6 +132,88 @@ class CommonController extends Controller
                 'isSuccess' => false,
                 'data' => null,
                 'message' => 'Lỗi: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * PATCH /api/hoc-ky/dates
+     * Update date range for a semester
+     */
+    public function updateHocKyDates(Request $request): JsonResponse
+    {
+        try {
+            $hocKyId = (string) (
+                $request->input('hocKyId')
+                ?? $request->input('hoc_ky_id')
+                ?? $request->input('id')
+                ?? ''
+            );
+
+            $startDate = (string) (
+                $request->input('startDate')
+                ?? $request->input('ngayBatDau')
+                ?? $request->input('ngay_bat_dau')
+                ?? ''
+            );
+
+            $endDate = (string) (
+                $request->input('endDate')
+                ?? $request->input('ngayKetThuc')
+                ?? $request->input('ngay_ket_thuc')
+                ?? ''
+            );
+
+            if ($hocKyId === '' || $startDate === '' || $endDate === '') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'data' => null,
+                    'message' => 'Thiếu dữ liệu. Cần hocKyId, startDate và endDate.'
+                ], 400);
+            }
+
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'data' => null,
+                    'message' => 'Định dạng ngày không hợp lệ. Dùng YYYY-MM-DD.'
+                ], 422);
+            }
+
+            if ($startDate > $endDate) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'data' => null,
+                    'message' => 'Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc.'
+                ], 422);
+            }
+
+            $hocKy = $this->hocKyRepository->findById($hocKyId);
+            if (! $hocKy) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'data' => null,
+                    'message' => 'Không tìm thấy học kỳ.'
+                ], 404);
+            }
+
+            $this->hocKyRepository->updateDates($hocKyId, $startDate, $endDate);
+            $updated = $this->hocKyRepository->findById($hocKyId);
+
+            return response()->json([
+                'isSuccess' => true,
+                'data' => [
+                    'id' => $updated?->id,
+                    'ngayBatDau' => $updated?->ngay_bat_dau?->toDateString(),
+                    'ngayKetThuc' => $updated?->ngay_ket_thuc?->toDateString(),
+                ],
+                'message' => 'Cập nhật ngày học kỳ thành công.'
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'data' => null,
+                'message' => 'Lỗi khi cập nhật ngày học kỳ: ' . $e->getMessage()
             ], 500);
         }
     }

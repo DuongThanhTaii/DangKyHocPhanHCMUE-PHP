@@ -832,14 +832,31 @@ legend {
 }
 
 .form__group__quanly {
-  position: absolute;
+  position: relative;
+  width: 100%;
+  margin: 12px 0 18px;
 }
 
 .form__group__quanly .form__input {
-  width: 162px;
-  height: 20px;
-  padding: 10px;
-  border: 1px solid #172b4d;
+  width: 100% !important;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid #0c4874;
+  border-radius: 16px;
+  background: #fff;
+  line-height: 1.2;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form__group__quanly .form__input::placeholder {
+  color: #5c6b7a;
+}
+
+.form__group__quanly .form__input:focus {
+  outline: none;
+  border-color: #0a5d98;
+  box-shadow: 0 0 0 3px rgba(12, 72, 116, 0.14);
 }
 
 input.form__floating-label__quanly {

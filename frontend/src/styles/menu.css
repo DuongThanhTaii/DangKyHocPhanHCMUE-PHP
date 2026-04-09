@@ -1402,6 +1402,9 @@ input.form__floating-label__quanly {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Modal thông báo (NotifyModal) */
@@ -2039,10 +2042,12 @@ th {
   background: white;
   padding: 20px;
   border-radius: 8px;
-  width: 600px;
-  margin: 35px auto;
-  position: absolute;
+  width: min(700px, 92vw);
+  margin: 0;
+  position: relative;
   z-index: 999;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
 .container-modal-popup {
@@ -2052,6 +2057,7 @@ th {
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 24px;
 }
 
 .modal-popup-row {

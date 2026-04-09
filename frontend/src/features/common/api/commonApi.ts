@@ -92,7 +92,7 @@ export const commonApi = {
 
         return await fetchJSON("hoc-ky/dates", {
             method: "PATCH",
-            body: JSON.stringify(data),
+            body: data,
         });
     },
 };

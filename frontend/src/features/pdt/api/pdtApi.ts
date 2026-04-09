@@ -295,10 +295,28 @@ export const pdtApi = {
     tinhHocPhiHangLoat: async (
         data: TinhHocPhiHangLoatRequest
     ): Promise<ServiceResult<TinhHocPhiHangLoatResponse>> => {
-        return await fetchJSON("tuition/calculate-semester", {
+        const raw = await fetchJSON("pdt/hoc-phi/tinh-toan-hang-loat", {
             method: "POST",
-            body: data,
+            body: {
+                hocKyId: data.hoc_ky_id,
+                hoc_ky_id: data.hoc_ky_id,
+            },
         });
+
+        // Normalize backend response ({ processedCount }) to FE shape.
+        if (raw?.isSuccess && raw?.data && typeof raw.data.processedCount === "number") {
+            return {
+                ...raw,
+                data: {
+                    totalProcessed: raw.data.processedCount,
+                    successCount: raw.data.processedCount,
+                    failedCount: 0,
+                    errors: [],
+                },
+            } as ServiceResult<TinhHocPhiHangLoatResponse>;
+        }
+
+        return raw as ServiceResult<TinhHocPhiHangLoatResponse>;
     },
 
     /**
